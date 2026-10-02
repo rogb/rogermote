@@ -297,7 +297,7 @@ fun RemoteScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(28.dp))
             Surface(
                 onClick = { showMoreControls = true },
                 enabled = true,
