@@ -4,8 +4,10 @@ import android.graphics.BitmapFactory
 import android.util.Base64
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
@@ -25,6 +27,7 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -65,7 +68,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -78,6 +84,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -87,6 +94,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextOverflow
+import kotlin.math.roundToInt
 import com.rogbandroid.rogermote.data.TvApplication
 import com.rogbandroid.rogermote.R
 import com.rogbandroid.rogermote.tv.ConnectionState
@@ -96,6 +104,7 @@ import com.rogbandroid.rogermote.ui.theme.RogermoteTheme
 import com.rogbandroid.rogermote.viewmodel.RemoteUiState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 private val RemoteBackground = Color(0xFF090B0D)
@@ -143,6 +152,7 @@ fun RemoteScreen(
     uiState: RemoteUiState,
     onCommand: (RemoteCommand) -> Unit,
     onLaunchApplication: (TvApplication) -> Unit,
+    onReorderApplications: (List<TvApplication>) -> Unit,
     onDisconnect: () -> Unit,
     onOpenSetup: () -> Unit,
 ) {
@@ -349,6 +359,7 @@ fun RemoteScreen(
                 enabled = controlsEnabled,
                 hapticsEnabled = uiState.hapticsEnabled,
                 onLaunchApplication = onLaunchApplication,
+                onReorderApplications = onReorderApplications,
             )
             Spacer(modifier = Modifier.height(8.dp))
             HorizontalDivider(color = Color(0xFF354047), thickness = 1.dp)
@@ -621,31 +632,133 @@ private fun TallIconButton(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ShortcutRow(
     applications: List<TvApplication>,
     enabled: Boolean,
     hapticsEnabled: Boolean,
     onLaunchApplication: (TvApplication) -> Unit,
+    onReorderApplications: (List<TvApplication>) -> Unit,
 ) {
+    val listState = rememberLazyListState()
+    val autoScrollScope = rememberCoroutineScope()
+    val orderedApplications = remember { mutableStateListOf<TvApplication>() }
+    var draggedApplicationId by remember { mutableStateOf<String?>(null) }
+    var draggedCenter by remember { mutableStateOf(0f) }
+    var autoScrollJob by remember { mutableStateOf<Job?>(null) }
+    var autoScrollDirection by remember { mutableStateOf(0) }
+
+    LaunchedEffect(applications) {
+        if (draggedApplicationId == null) {
+            orderedApplications.clear()
+            orderedApplications.addAll(applications)
+        }
+    }
+
     LazyRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(36.dp),
+        state = listState,
+        modifier = Modifier.fillMaxWidth().height(36.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        if (applications.isEmpty()) {
+        if (orderedApplications.isEmpty()) {
             items(4) { index ->
                 ShortcutPlaceholder(index)
             }
         } else {
-            items(applications, key = { it.id }) { application ->
-                TvApplicationButton(
-                    application = application,
-                    enabled = enabled,
-                    hapticsEnabled = hapticsEnabled,
-                    onClick = { onLaunchApplication(application) },
-                )
+            items(orderedApplications, key = { it.id }) { application ->
+                val isDragging = draggedApplicationId == application.id
+                val itemInfo = listState.layoutInfo.visibleItemsInfo
+                    .firstOrNull { it.key == application.id }
+                Box(
+                    modifier = Modifier
+                        .animateItem()
+                        .graphicsLayer {
+                            translationX = if (isDragging && itemInfo != null) {
+                                draggedCenter - itemInfo.offset - itemInfo.size / 2f
+                            } else {
+                                0f
+                            }
+                        }
+                        .pointerInput(application.id) {
+                            detectDragGesturesAfterLongPress(
+                                onDragStart = {
+                                    val info = listState.layoutInfo.visibleItemsInfo
+                                        .firstOrNull { it.key == application.id }
+                                    if (info != null) {
+                                        draggedApplicationId = application.id
+                                        draggedCenter = info.offset + info.size / 2f
+                                    }
+                                },
+                                onDragCancel = {
+                                    autoScrollJob?.cancel()
+                                    autoScrollJob = null
+                                    autoScrollDirection = 0
+                                    draggedApplicationId = null
+                                    draggedCenter = 0f
+                                },
+                                onDragEnd = {
+                                    autoScrollJob?.cancel()
+                                    autoScrollJob = null
+                                    autoScrollDirection = 0
+                                    onReorderApplications(orderedApplications.toList())
+                                    draggedApplicationId = null
+                                    draggedCenter = 0f
+                                },
+                                onDrag = { change, dragAmount ->
+                                    draggedCenter += dragAmount.x
+
+                                    val draggedInfo = listState.layoutInfo.visibleItemsInfo
+                                        .firstOrNull { it.key == application.id }
+                                    if (draggedInfo != null) {
+                                        val targetInfo = listState.layoutInfo.visibleItemsInfo
+                                            .firstOrNull { item ->
+                                                item.key != application.id &&
+                                                    draggedCenter > item.offset &&
+                                                    draggedCenter < item.offset + item.size
+                                            }
+                                        if (targetInfo != null) {
+                                            val fromIndex = orderedApplications.indexOfFirst { it.id == application.id }
+                                            val targetIndex = orderedApplications.indexOfFirst { it.id == targetInfo.key }
+                                            if (fromIndex >= 0 && targetIndex >= 0 && fromIndex != targetIndex) {
+                                                val moved = orderedApplications.removeAt(fromIndex)
+                                                orderedApplications.add(targetIndex, moved)
+                                            }
+                                        }
+
+                                        val edgeDistance = 56f
+                                        val viewportStart = listState.layoutInfo.viewportStartOffset.toFloat()
+                                        val viewportEnd = listState.layoutInfo.viewportEndOffset.toFloat()
+                                        val scrollDirection = when {
+                                            draggedCenter < viewportStart + edgeDistance -> -1
+                                            draggedCenter > viewportEnd - edgeDistance -> 1
+                                            else -> 0
+                                        }
+                                        if (scrollDirection != autoScrollDirection) {
+                                            autoScrollJob?.cancel()
+                                            autoScrollJob = null
+                                            autoScrollDirection = scrollDirection
+                                            if (scrollDirection != 0) {
+                                                autoScrollJob = autoScrollScope.launch {
+                                                    while (isActive && autoScrollDirection == scrollDirection) {
+                                                        listState.dispatchRawDelta(scrollDirection * 18f)
+                                                        delay(16L)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                            )
+                        },
+                ) {
+                    TvApplicationButton(
+                        application = application,
+                        enabled = enabled,
+                        hapticsEnabled = hapticsEnabled,
+                        onClick = { onLaunchApplication(application) },
+                    )
+                }
             }
         }
     }
@@ -720,7 +833,8 @@ private fun TvApplicationButton(
 }
 
 private fun bundledApplicationIcon(application: TvApplication): Int? {
-    val identity = "${application.name} ${application.id}".lowercase()
+    val name = application.name.trim().lowercase()
+    val identity = "$name ${application.id}".lowercase()
     return when {
         "youtube" in identity -> R.drawable.app_youtube
         "netflix" in identity -> R.drawable.app_netflix
@@ -748,6 +862,7 @@ private fun bundledApplicationIcon(application: TvApplication): Int? {
         "telstra" in identity -> R.drawable.app_telstra
         "calm" in identity -> R.drawable.app_calm
         "sbs" in identity -> R.drawable.app_sbs
+        name == "10" || name == "channel 10" || name == "network 10" -> R.drawable.app_channel10
         "channel 10" in identity || "channel10" in identity || "network 10" in identity || "network10" in identity -> R.drawable.app_channel10
         identity == "10" || identity.endsWith(".10") || identity.endsWith("_10") -> R.drawable.app_channel10
         "universal" in identity -> R.drawable.app_universal
@@ -978,6 +1093,7 @@ private fun RemoteScreenPreview() {
             uiState = RemoteUiState(connectionState = ConnectionState.Connected),
             onCommand = {},
             onLaunchApplication = {},
+            onReorderApplications = {},
             onDisconnect = {},
             onOpenSetup = {},
         )

@@ -151,6 +151,16 @@ Samsung discovery uses standard SSDP/UPnP multicast at `239.255.255.250:1900`, l
 - 2026-10-03: Expanded bundled-icon `testDebugUnitTest` and `assembleDebug` passed.
 - 2026-10-03: Added bundled icons and matching for Stan, Binge, 9Now, NFL, Foxtel, Google, Google TV, Tubi, Telstra, and Calm. BritBox, main SBS, and a clearly branded Universal TV asset remain unavailable in the selected public catalog.
 - 2026-10-03: Added sourced bundled icons and matching for SBS, current Network 10, Universal TV, and BritBox.
+- 2026-10-03: Added horizontal long-press shortcut reordering with animated item movement, edge auto-scroll, and persisted application-ID ordering.
+- 2026-10-03: Shortcut reordering `testDebugUnitTest` and `assembleDebug` passed.
+- 2026-10-03: Replaced one-shot edge scrolling with continuous auto-scroll while a dragged shortcut is held near either row edge.
+- 2026-10-03: Continuous shortcut auto-scroll `testDebugUnitTest` and `assembleDebug` passed.
+- 2026-10-03: Corrected edge auto-scroll to use raw list deltas and preserve the dragged shortcut's finger position during scrolling.
+- 2026-10-03: Corrected auto-scroll `testDebugUnitTest` and `assembleDebug` passed; physical verification is pending.
+- 2026-10-03: Reworked shortcut dragging so the outer button wrapper moves as a unit and edge scrolling tracks the dragged button's viewport center.
+- 2026-10-03: Reworked shortcut dragging `testDebugUnitTest` and `assembleDebug` passed; physical verification is pending.
+- 2026-10-03: Replaced the Channel 10 shortcut asset with the requested 2018 Network 10 logo and added explicit matching for display names `10`, `Channel 10`, and `Network 10`.
+- 2026-10-03: Channel 10 icon matching `testDebugUnitTest` and `assembleDebug` passed.
 
 ## Important decisions
 

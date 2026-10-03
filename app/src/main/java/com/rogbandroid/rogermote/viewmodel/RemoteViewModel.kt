@@ -59,7 +59,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
                 mutableUiState.update {
                         it.copy(
                             connectionState = connectionState,
-                            installedApplications = remoteClient.installedApplications.value,
+                            installedApplications = orderApplications(remoteClient.installedApplications.value),
                         page = if (connectionState == ConnectionState.Connected) {
                             RemotePage.Remote
                         } else {
@@ -71,7 +71,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
         }
         viewModelScope.launch {
             remoteClient.installedApplications.collect { applications ->
-                mutableUiState.update { it.copy(installedApplications = applications) }
+                mutableUiState.update { it.copy(installedApplications = orderApplications(applications)) }
             }
         }
         runCatching { connectivityManager?.registerDefaultNetworkCallback(networkCallback) }
@@ -115,6 +115,12 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
 
     fun launchApplication(application: TvApplication) {
         remoteClient.launchApplication(application)
+    }
+
+    fun reorderApplications(applications: List<TvApplication>) {
+        val orderedApplications = applications.distinctBy { it.id }
+        tvPreferences.writeShortcutOrder(orderedApplications.map { it.id })
+        mutableUiState.update { it.copy(installedApplications = orderedApplications) }
     }
 
     fun setHapticsEnabled(enabled: Boolean) {
@@ -229,6 +235,15 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
                 connect()
             }
         }
+    }
+
+    private fun orderApplications(applications: List<TvApplication>): List<TvApplication> {
+        val savedOrder = tvPreferences.readShortcutOrder()
+        if (savedOrder.isEmpty()) return applications
+        val byId = applications.associateBy { it.id }
+        val savedApplications = savedOrder.mapNotNull(byId::get)
+        val savedIds = savedApplications.mapTo(mutableSetOf()) { it.id }
+        return savedApplications + applications.filterNot { it.id in savedIds }
     }
 
     private companion object {

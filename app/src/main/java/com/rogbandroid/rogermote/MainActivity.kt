@@ -66,6 +66,7 @@ fun RogermoteApp(viewModel: RemoteViewModel = viewModel()) {
             uiState = uiState,
             onCommand = viewModel::sendCommand,
             onLaunchApplication = viewModel::launchApplication,
+            onReorderApplications = viewModel::reorderApplications,
             onDisconnect = viewModel::disconnect,
             onOpenSetup = viewModel::openSetup,
         )
