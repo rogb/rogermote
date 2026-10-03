@@ -225,18 +225,42 @@ fun RemoteScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            NavigationPad(
-                enabled = controlsEnabled,
-                hapticsEnabled = uiState.hapticsEnabled,
-                onCommand = onCommand,
-                modifier = Modifier.size(226.dp),
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TallIconButton(
+                    icon = Icons.AutoMirrored.Filled.ArrowBack,
+                    description = "Back",
+                    enabled = controlsEnabled,
+                    hapticsEnabled = uiState.hapticsEnabled,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    onCommand(RemoteCommand.Back)
+                }
+                NavigationPad(
+                    enabled = controlsEnabled,
+                    hapticsEnabled = uiState.hapticsEnabled,
+                    onCommand = onCommand,
+                    modifier = Modifier.size(226.dp),
+                )
+                TallIconButton(
+                    icon = Icons.Default.Home,
+                    description = "Home",
+                    enabled = controlsEnabled,
+                    hapticsEnabled = uiState.hapticsEnabled,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    onCommand(RemoteCommand.Home)
+                }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.Top,
             ) {
                 VerticalRemoteControl(
                     label = "Vol",
@@ -248,30 +272,44 @@ fun RemoteScreen(
                     hapticsEnabled = uiState.hapticsEnabled,
                     onUp = { onCommand(RemoteCommand.VolumeUp) },
                     onDown = { onCommand(RemoteCommand.VolumeDown) },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(0.8f),
                 )
                 Column(
-                    modifier = Modifier.weight(1.7f),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.weight(2.4f),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SmallIconButton(Icons.AutoMirrored.Filled.ArrowBack, "Back", controlsEnabled, uiState.hapticsEnabled) {
-                            onCommand(RemoteCommand.Back)
-                        }
-                        SmallIconButton(Icons.Default.Home, "Home", controlsEnabled, uiState.hapticsEnabled) {
-                            onCommand(RemoteCommand.Home)
-                        }
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SmallIconButton(Icons.AutoMirrored.Filled.VolumeOff, "Mute", controlsEnabled, uiState.hapticsEnabled) {
+                    Row(
+                        modifier = Modifier.height(64.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        SmallIconButton(
+                            Icons.AutoMirrored.Filled.VolumeOff,
+                            "Mute",
+                            controlsEnabled,
+                            uiState.hapticsEnabled,
+                            modifier = Modifier.weight(1f),
+                            fillWidth = true,
+                        ) {
                             onCommand(RemoteCommand.Mute)
                         }
-                        SmallIconButton(Icons.Default.Info, "Info", controlsEnabled, uiState.hapticsEnabled) {
+                        SmallIconButton(
+                            Icons.Default.Info,
+                            "Info",
+                            controlsEnabled,
+                            uiState.hapticsEnabled,
+                            modifier = Modifier.weight(1f),
+                            fillWidth = true,
+                        ) {
                             onCommand(RemoteCommand.Info)
                         }
                     }
-                    SmallTextButton("Prev", "Previous channel", controlsEnabled, uiState.hapticsEnabled) {
+                    SmallTextButton(
+                        "Prev",
+                        "Previous channel",
+                        controlsEnabled,
+                        uiState.hapticsEnabled,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
                         onCommand(RemoteCommand.PreviousChannel)
                     }
                 }
@@ -285,7 +323,7 @@ fun RemoteScreen(
                     hapticsEnabled = uiState.hapticsEnabled,
                     onUp = { onCommand(RemoteCommand.ChannelUp) },
                     onDown = { onCommand(RemoteCommand.ChannelDown) },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(0.8f),
                 )
             }
 
@@ -480,6 +518,8 @@ private fun SmallIconButton(
     description: String,
     enabled: Boolean,
     hapticsEnabled: Boolean,
+    modifier: Modifier = Modifier,
+    fillWidth: Boolean = false,
     onClick: () -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
@@ -492,7 +532,10 @@ private fun SmallIconButton(
         enabled = enabled,
         shape = RoundedCornerShape(16.dp),
         color = Color.Transparent,
-        modifier = Modifier.size(64.dp).raisedButton(RoundedCornerShape(16.dp)).semantics { contentDescription = description },
+        modifier = modifier
+            .then(if (fillWidth) Modifier.height(64.dp).fillMaxWidth() else Modifier.size(64.dp))
+            .raisedButton(RoundedCornerShape(16.dp))
+            .semantics { contentDescription = description },
     ) {
         Box(contentAlignment = Alignment.Center) {
             Icon(icon, contentDescription = null, tint = Color.White)
@@ -506,6 +549,7 @@ private fun SmallTextButton(
     description: String,
     enabled: Boolean,
     hapticsEnabled: Boolean,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
@@ -518,9 +562,39 @@ private fun SmallTextButton(
         enabled = enabled,
         shape = RoundedCornerShape(16.dp),
         color = Color.Transparent,
-        modifier = Modifier.height(64.dp).fillMaxWidth().raisedButton(RoundedCornerShape(16.dp)).semantics { contentDescription = description },
+        modifier = modifier.height(64.dp).fillMaxWidth().raisedButton(RoundedCornerShape(16.dp)).semantics { contentDescription = description },
     ) {
         Box(contentAlignment = Alignment.Center) { Text(text, color = Color.White) }
+    }
+}
+
+@Composable
+private fun TallIconButton(
+    icon: ImageVector,
+    description: String,
+    enabled: Boolean,
+    hapticsEnabled: Boolean,
+    modifier: Modifier,
+    onClick: () -> Unit,
+) {
+    val haptic = LocalHapticFeedback.current
+    val trigger = {
+        if (hapticsEnabled) haptic.performHapticFeedback(HapticFeedbackType.VirtualKey)
+        onClick()
+    }
+    Surface(
+        onClick = trigger,
+        enabled = enabled,
+        shape = RoundedCornerShape(16.dp),
+        color = Color.Transparent,
+        modifier = modifier
+            .height(226.dp)
+            .raisedButton(RoundedCornerShape(16.dp))
+            .semantics { contentDescription = description },
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(icon, contentDescription = null, tint = Color.White)
+        }
     }
 }
 
