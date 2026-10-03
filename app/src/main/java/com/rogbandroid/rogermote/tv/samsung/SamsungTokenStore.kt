@@ -45,7 +45,9 @@ internal class KeystoreSamsungTokenStore(context: Context) : SamsungTokenStore {
             append(':')
             append(Base64.getEncoder().encodeToString(cipher.doFinal(token.toByteArray(Charsets.UTF_8))))
         }
-        preferences.edit().putString(preferenceKey(ipAddress), storedValue).apply()
+        check(
+            preferences.edit().putString(preferenceKey(ipAddress), storedValue).commit(),
+        ) { "Unable to persist Samsung pairing authorization" }
     }
 
     override fun clear(ipAddress: String) {

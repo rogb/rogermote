@@ -506,9 +506,9 @@ private fun VerticalRemoteControl(
     modifier: Modifier,
 ) {
     Surface(
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(16.dp),
         color = Color.Transparent,
-        modifier = modifier.height(140.dp).raisedButton(RoundedCornerShape(28.dp)),
+        modifier = modifier.height(140.dp).raisedButton(RoundedCornerShape(16.dp)),
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             PadIconButton(upIcon, upDescription, enabled, hapticsEnabled, true, Modifier, onUp, iconTint = Color.White)
@@ -769,7 +769,7 @@ private fun ShortcutPlaceholder(index: Int) {
     Box(
         modifier = Modifier
             .size(width = 84.dp, height = 36.dp)
-            .raisedButton(RoundedCornerShape(14.dp))
+            .raisedButton(RoundedCornerShape(16.dp))
             .semantics { contentDescription = "Shortcut slot ${index + 1}" },
     )
 }
@@ -794,11 +794,11 @@ private fun TvApplicationButton(
             onClick()
         },
         enabled = enabled,
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         color = Color.Transparent,
         modifier = Modifier
             .size(width = 112.dp, height = 36.dp)
-            .raisedButton(RoundedCornerShape(14.dp))
+            .raisedButton(RoundedCornerShape(16.dp))
             .semantics { contentDescription = "Launch ${application.name}" },
     ) {
         Row(
@@ -953,9 +953,9 @@ private fun SheetButton(
     Surface(
         onClick = trigger,
         enabled = enabled,
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         color = Color.Transparent,
-        modifier = modifier.fillMaxHeight().raisedButton(RoundedCornerShape(14.dp)).semantics { contentDescription = description },
+        modifier = modifier.fillMaxHeight().raisedButton(RoundedCornerShape(16.dp)).semantics { contentDescription = description },
     ) {
         val textColor = when (text) {
             "RED" -> Color(0xFFFF5252)
@@ -985,9 +985,9 @@ private fun SheetIconButton(
     Surface(
         onClick = trigger,
         enabled = enabled,
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         color = Color.Transparent,
-        modifier = modifier.fillMaxHeight().raisedButton(RoundedCornerShape(14.dp)).semantics { contentDescription = description },
+        modifier = modifier.fillMaxHeight().raisedButton(RoundedCornerShape(16.dp)).semantics { contentDescription = description },
     ) { Box(contentAlignment = Alignment.Center) { Icon(icon, contentDescription = null, tint = Color.White) } }
 }
 
@@ -1008,9 +1008,9 @@ private fun LargeSheetIconButton(
     Surface(
         onClick = trigger,
         enabled = enabled,
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         color = Color.Transparent,
-        modifier = modifier.fillMaxHeight().raisedButton(RoundedCornerShape(14.dp))
+        modifier = modifier.fillMaxHeight().raisedButton(RoundedCornerShape(16.dp))
             .semantics { contentDescription = description },
     ) {
         Box(contentAlignment = Alignment.Center) {
@@ -1037,9 +1037,9 @@ private fun ColoredFunctionButton(
     Surface(
         onClick = trigger,
         enabled = enabled,
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         color = Color.Transparent,
-        modifier = modifier.fillMaxHeight().raisedButton(RoundedCornerShape(14.dp))
+        modifier = modifier.fillMaxHeight().raisedButton(RoundedCornerShape(16.dp))
             .semantics { contentDescription = description },
     ) {
         Box(
@@ -1067,7 +1067,7 @@ private fun TextButtonLike(text: String, enabled: Boolean, onClick: () -> Unit) 
         onClick = onClick,
         enabled = enabled,
         color = Color.Transparent,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         modifier = Modifier.height(32.dp),
     ) { Box(contentAlignment = Alignment.Center) { Text(text, color = Color(0xFFAAB4BA), style = MaterialTheme.typography.labelSmall) } }
 }

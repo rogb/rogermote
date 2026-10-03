@@ -161,6 +161,9 @@ Samsung discovery uses standard SSDP/UPnP multicast at `239.255.255.250:1900`, l
 - 2026-10-03: Reworked shortcut dragging `testDebugUnitTest` and `assembleDebug` passed; physical verification is pending.
 - 2026-10-03: Replaced the Channel 10 shortcut asset with the requested 2018 Network 10 logo and added explicit matching for display names `10`, `Channel 10`, and `Network 10`.
 - 2026-10-03: Channel 10 icon matching `testDebugUnitTest` and `assembleDebug` passed.
+- 2026-10-04: Hardened Samsung pairing reuse by deduplicating active connection requests, committing encrypted token writes synchronously, and keeping the authenticated WebSocket alive across ordinary app background/foreground transitions.
+- 2026-10-04: Standardized all rounded rectangular remote buttons to the 16dp Back/Home corner radius; circular D-pad and OK controls remain circular.
+- 2026-10-04: Button-radius standardization `testDebugUnitTest` and `assembleDebug` passed.
 
 ## Important decisions
 

@@ -144,9 +144,8 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
 
     fun onAppBackground() {
         reconnectJob?.cancel()
-        if (mutableUiState.value.connectionState != ConnectionState.Disconnected) {
-            remoteClient.disconnect()
-        }
+        // Keep the authenticated WebSocket alive across ordinary activity backgrounding.
+        // Reopening the app should not create a new Samsung authorization handshake.
     }
 
     fun openSetup() {

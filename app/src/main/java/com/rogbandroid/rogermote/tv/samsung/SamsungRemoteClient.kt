@@ -42,9 +42,21 @@ internal class SamsungRemoteClient(
     private var activeIconRequest: TvApplication? = null
 
     override fun connect(ipAddress: String) {
-        val savedToken = tokenStore.read(ipAddress)
+        val normalizedIpAddress = ipAddress.trim()
+        if (currentIpAddress == normalizedIpAddress &&
+            mutableConnectionState.value in setOf(
+                ConnectionState.Connecting,
+                ConnectionState.WaitingForTvApproval,
+                ConnectionState.Connected,
+            )
+        ) {
+            Log.d(TAG, "Ignoring duplicate Samsung connection request for the active session")
+            return
+        }
+
+        val savedToken = tokenStore.read(normalizedIpAddress)
         startConnection(
-            ipAddress = ipAddress,
+            ipAddress = normalizedIpAddress,
             token = savedToken,
             mayRetryWithoutToken = savedToken != null,
         )
