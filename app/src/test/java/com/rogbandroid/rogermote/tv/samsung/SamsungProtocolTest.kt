@@ -45,4 +45,56 @@ class SamsungProtocolTest {
 
         assertEquals(SamsungEvent.Unauthorized, event)
     }
+
+    @Test
+    fun installedApplicationRequestUsesSamsungEmitEvent() {
+        val message = JSONObject(SamsungProtocol.installedApplicationsMessage())
+        val params = message.getJSONObject("params")
+
+        assertEquals("ms.channel.emit", message.getString("method"))
+        assertEquals("ed.installedApp.get", params.getString("event"))
+        assertEquals("host", params.getString("to"))
+        assertFalse(params.has("data"))
+    }
+
+    @Test
+    fun installedApplicationsResponseReturnsDiscoveredMetadata() {
+        val event = SamsungProtocol.parseEvent(
+            """{"event":"ed.installedApp.get","data":{"data":[{"appId":"youtube.id","name":"YouTube","icon":"/icons/youtube.png"}]}}""",
+        )
+
+        assertEquals(
+            SamsungEvent.Applications(
+                listOf(
+                    com.rogbandroid.rogermote.data.TvApplication(
+                        id = "youtube.id",
+                        name = "YouTube",
+                        iconReference = "/icons/youtube.png",
+                    ),
+                ),
+            ),
+            event,
+        )
+    }
+
+    @Test
+    fun launchApplicationUsesDiscoveredId() {
+        val message = JSONObject(SamsungProtocol.launchApplicationMessage("youtube.id"))
+        val params = message.getJSONObject("params")
+
+        assertEquals("ed.apps.launch", params.getString("event"))
+        val data = params.getJSONObject("data")
+        assertEquals("youtube.id", data.getString("appId"))
+        assertEquals("DEEP_LINK", data.getString("action_type"))
+        assertEquals("", data.getString("metaTag"))
+    }
+
+    @Test
+    fun applicationIconRequestUsesReturnedIconPath() {
+        val message = JSONObject(SamsungProtocol.applicationIconMessage("/icons/youtube.png"))
+        val params = message.getJSONObject("params")
+
+        assertEquals("ed.apps.icon", params.getString("event"))
+        assertEquals("/icons/youtube.png", params.getJSONObject("data").getString("iconPath"))
+    }
 }

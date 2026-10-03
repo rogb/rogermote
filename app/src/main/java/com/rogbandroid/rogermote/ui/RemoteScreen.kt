@@ -1,5 +1,8 @@
 package com.rogbandroid.rogermote.ui
 
+import android.graphics.BitmapFactory
+import android.util.Base64
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,9 +19,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -59,11 +66,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.Shape
@@ -76,6 +86,9 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextOverflow
+import com.rogbandroid.rogermote.data.TvApplication
+import com.rogbandroid.rogermote.R
 import com.rogbandroid.rogermote.tv.ConnectionState
 import com.rogbandroid.rogermote.tv.RemoteCommand
 import com.rogbandroid.rogermote.tv.displayText
@@ -129,6 +142,7 @@ private fun Modifier.raisedAccent(shape: Shape): Modifier =
 fun RemoteScreen(
     uiState: RemoteUiState,
     onCommand: (RemoteCommand) -> Unit,
+    onLaunchApplication: (TvApplication) -> Unit,
     onDisconnect: () -> Unit,
     onOpenSetup: () -> Unit,
 ) {
@@ -224,10 +238,10 @@ fun RemoteScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 TallIconButton(
@@ -235,7 +249,7 @@ fun RemoteScreen(
                     description = "Back",
                     enabled = controlsEnabled,
                     hapticsEnabled = uiState.hapticsEnabled,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.width(60.dp),
                 ) {
                     onCommand(RemoteCommand.Back)
                 }
@@ -243,24 +257,24 @@ fun RemoteScreen(
                     enabled = controlsEnabled,
                     hapticsEnabled = uiState.hapticsEnabled,
                     onCommand = onCommand,
-                    modifier = Modifier.size(226.dp),
+                    modifier = Modifier.size(192.dp),
                 )
                 TallIconButton(
                     icon = Icons.Default.Home,
                     description = "Home",
                     enabled = controlsEnabled,
                     hapticsEnabled = uiState.hapticsEnabled,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.width(60.dp),
                 ) {
                     onCommand(RemoteCommand.Home)
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.Top,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 VerticalRemoteControl(
                     label = "Vol",
@@ -272,14 +286,14 @@ fun RemoteScreen(
                     hapticsEnabled = uiState.hapticsEnabled,
                     onUp = { onCommand(RemoteCommand.VolumeUp) },
                     onDown = { onCommand(RemoteCommand.VolumeDown) },
-                    modifier = Modifier.weight(0.8f),
+                    modifier = Modifier.width(60.dp),
                 )
                 Column(
                     modifier = Modifier.weight(2.4f),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Row(
-                        modifier = Modifier.height(64.dp),
+                        modifier = Modifier.height(52.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         SmallIconButton(
@@ -323,13 +337,22 @@ fun RemoteScreen(
                     hapticsEnabled = uiState.hapticsEnabled,
                     onUp = { onCommand(RemoteCommand.ChannelUp) },
                     onDown = { onCommand(RemoteCommand.ChannelDown) },
-                    modifier = Modifier.weight(0.8f),
+                    modifier = Modifier.width(60.dp),
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             HorizontalDivider(color = Color(0xFF354047), thickness = 1.dp)
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            ShortcutRow(
+                applications = uiState.installedApplications,
+                enabled = controlsEnabled,
+                hapticsEnabled = uiState.hapticsEnabled,
+                onLaunchApplication = onLaunchApplication,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            HorizontalDivider(color = Color(0xFF354047), thickness = 1.dp)
+            Spacer(modifier = Modifier.height(8.dp))
             MoreControls(
                 modifier = Modifier.weight(1f),
                 enabled = controlsEnabled,
@@ -360,7 +383,7 @@ private fun NavigationPad(
             enabled = enabled,
             hapticsEnabled = hapticsEnabled,
             repeatOnHold = true,
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = 12.dp),
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 12.dp).offset(y = (-16).dp),
             onClick = { onCommand(RemoteCommand.Up) },
             iconTint = RemoteControlIcon,
         )
@@ -370,7 +393,7 @@ private fun NavigationPad(
             enabled = enabled,
             hapticsEnabled = hapticsEnabled,
             repeatOnHold = true,
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp),
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp).offset(y = 16.dp),
             onClick = { onCommand(RemoteCommand.Down) },
             iconTint = RemoteControlIcon,
         )
@@ -380,7 +403,7 @@ private fun NavigationPad(
             enabled = enabled,
             hapticsEnabled = hapticsEnabled,
             repeatOnHold = true,
-            modifier = Modifier.align(Alignment.CenterStart).padding(start = 12.dp),
+            modifier = Modifier.align(Alignment.CenterStart).padding(start = 12.dp).offset(x = (-16).dp),
             onClick = { onCommand(RemoteCommand.Left) },
             iconTint = RemoteControlIcon,
         )
@@ -390,7 +413,7 @@ private fun NavigationPad(
             enabled = enabled,
             hapticsEnabled = hapticsEnabled,
             repeatOnHold = true,
-            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 12.dp),
+            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 12.dp).offset(x = 16.dp),
             onClick = { onCommand(RemoteCommand.Right) },
             iconTint = RemoteControlIcon,
         )
@@ -474,7 +497,7 @@ private fun VerticalRemoteControl(
     Surface(
         shape = RoundedCornerShape(28.dp),
         color = Color.Transparent,
-        modifier = modifier.height(148.dp).raisedButton(RoundedCornerShape(28.dp)),
+        modifier = modifier.height(140.dp).raisedButton(RoundedCornerShape(28.dp)),
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             PadIconButton(upIcon, upDescription, enabled, hapticsEnabled, true, Modifier, onUp, iconTint = Color.White)
@@ -533,7 +556,7 @@ private fun SmallIconButton(
         shape = RoundedCornerShape(16.dp),
         color = Color.Transparent,
         modifier = modifier
-            .then(if (fillWidth) Modifier.height(64.dp).fillMaxWidth() else Modifier.size(64.dp))
+            .then(if (fillWidth) Modifier.height(52.dp).fillMaxWidth() else Modifier.size(52.dp))
             .raisedButton(RoundedCornerShape(16.dp))
             .semantics { contentDescription = description },
     ) {
@@ -562,7 +585,7 @@ private fun SmallTextButton(
         enabled = enabled,
         shape = RoundedCornerShape(16.dp),
         color = Color.Transparent,
-        modifier = modifier.height(64.dp).fillMaxWidth().raisedButton(RoundedCornerShape(16.dp)).semantics { contentDescription = description },
+        modifier = modifier.height(52.dp).fillMaxWidth().raisedButton(RoundedCornerShape(16.dp)).semantics { contentDescription = description },
     ) {
         Box(contentAlignment = Alignment.Center) { Text(text, color = Color.White) }
     }
@@ -588,7 +611,7 @@ private fun TallIconButton(
         shape = RoundedCornerShape(16.dp),
         color = Color.Transparent,
         modifier = modifier
-            .height(226.dp)
+            .height(192.dp)
             .raisedButton(RoundedCornerShape(16.dp))
             .semantics { contentDescription = description },
     ) {
@@ -597,6 +620,151 @@ private fun TallIconButton(
         }
     }
 }
+
+@Composable
+private fun ShortcutRow(
+    applications: List<TvApplication>,
+    enabled: Boolean,
+    hapticsEnabled: Boolean,
+    onLaunchApplication: (TvApplication) -> Unit,
+) {
+    LazyRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(36.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (applications.isEmpty()) {
+            items(4) { index ->
+                ShortcutPlaceholder(index)
+            }
+        } else {
+            items(applications, key = { it.id }) { application ->
+                TvApplicationButton(
+                    application = application,
+                    enabled = enabled,
+                    hapticsEnabled = hapticsEnabled,
+                    onClick = { onLaunchApplication(application) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ShortcutPlaceholder(index: Int) {
+    Box(
+        modifier = Modifier
+            .size(width = 84.dp, height = 36.dp)
+            .raisedButton(RoundedCornerShape(14.dp))
+            .semantics { contentDescription = "Shortcut slot ${index + 1}" },
+    )
+}
+
+@Composable
+private fun TvApplicationButton(
+    application: TvApplication,
+    enabled: Boolean,
+    hapticsEnabled: Boolean,
+    onClick: () -> Unit,
+) {
+    val haptic = LocalHapticFeedback.current
+    val bundledIcon = remember(application.id, application.name) {
+        bundledApplicationIcon(application)
+    }
+    val iconBitmap = remember(application.iconData) {
+        application.iconData?.let(::decodeApplicationIcon)
+    }
+    Surface(
+        onClick = {
+            if (hapticsEnabled) haptic.performHapticFeedback(HapticFeedbackType.VirtualKey)
+            onClick()
+        },
+        enabled = enabled,
+        shape = RoundedCornerShape(14.dp),
+        color = Color.Transparent,
+        modifier = Modifier
+            .size(width = 112.dp, height = 36.dp)
+            .raisedButton(RoundedCornerShape(14.dp))
+            .semantics { contentDescription = "Launch ${application.name}" },
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            if (bundledIcon != null) {
+                Image(
+                    painter = painterResource(bundledIcon),
+                    contentDescription = null,
+                    modifier = Modifier.size(22.dp),
+                )
+            } else if (iconBitmap != null) {
+                Image(
+                    bitmap = iconBitmap,
+                    contentDescription = null,
+                    modifier = Modifier.size(22.dp),
+                )
+            } else {
+                Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+            }
+            Text(
+                text = application.name,
+                color = Color.White,
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+private fun bundledApplicationIcon(application: TvApplication): Int? {
+    val identity = "${application.name} ${application.id}".lowercase()
+    return when {
+        "youtube" in identity -> R.drawable.app_youtube
+        "netflix" in identity -> R.drawable.app_netflix
+        "spotify" in identity -> R.drawable.app_spotify
+        "plex" in identity -> R.drawable.app_plex
+        "apple" in identity && "tv" in identity -> R.drawable.app_appletv
+        "paramount" in identity -> R.drawable.app_paramountplus
+        "crunchyroll" in identity -> R.drawable.app_crunchyroll
+        "twitch" in identity -> R.drawable.app_twitch
+        "max" in identity || "hbo" in identity -> R.drawable.app_max
+        "prime" in identity && "video" in identity -> R.drawable.app_primevideo
+        "disney" in identity -> R.drawable.app_disneyplus
+        "abc" in identity && "iview" in identity -> R.drawable.app_abciview
+        "7plus" in identity || "7 plus" in identity -> R.drawable.app_7plus
+        "10play" in identity || "10 play" in identity -> R.drawable.app_10play
+        "kayo" in identity -> R.drawable.app_kayo
+        "binge" in identity -> R.drawable.app_binge
+        "stan" in identity -> R.drawable.app_stan
+        "9now" in identity || "9-now" in identity || "nine now" in identity -> R.drawable.app_9now
+        "nfl" in identity -> R.drawable.app_nfl
+        "foxtel" in identity -> R.drawable.app_foxtel
+        "google tv" in identity || "googletv" in identity -> R.drawable.app_googletv
+        "google" in identity -> R.drawable.app_google
+        "tubi" in identity -> R.drawable.app_tubi
+        "telstra" in identity -> R.drawable.app_telstra
+        "calm" in identity -> R.drawable.app_calm
+        "sbs" in identity -> R.drawable.app_sbs
+        "channel 10" in identity || "channel10" in identity || "network 10" in identity || "network10" in identity -> R.drawable.app_channel10
+        identity == "10" || identity.endsWith(".10") || identity.endsWith("_10") -> R.drawable.app_channel10
+        "universal" in identity -> R.drawable.app_universal
+        "britbox" in identity || "brit box" in identity -> R.drawable.app_britbox
+        "internet" in identity || "browser" in identity || "web" in identity -> R.drawable.app_internet
+        else -> null
+    }
+}
+
+private fun decodeApplicationIcon(iconData: String) = runCatching {
+    val encoded = iconData.substringAfter("base64,", iconData)
+    BitmapFactory.decodeByteArray(
+        Base64.decode(encoded, Base64.DEFAULT),
+        0,
+        Base64.decode(encoded, Base64.DEFAULT).size,
+    )?.asImageBitmap()
+}.getOrNull()
 
 @Composable
 private fun MoreControls(
@@ -809,6 +977,7 @@ private fun RemoteScreenPreview() {
         RemoteScreen(
             uiState = RemoteUiState(connectionState = ConnectionState.Connected),
             onCommand = {},
+            onLaunchApplication = {},
             onDisconnect = {},
             onOpenSetup = {},
         )

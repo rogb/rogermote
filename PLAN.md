@@ -948,54 +948,649 @@ Do not automatically continue to another milestone without user approval.
 
 ## Milestone 9 — TV app shortcuts
 
-### Goal
+# Task — Samsung TV App Discovery, Icons and Launching
 
-Optionally launch installed Samsung TV apps directly.
+## Objective
 
-### Research first
+Add support for discovering applications installed on the paired Samsung Q80R and displaying them in the row of app buttons that has already been reserved on the Remote Control screen.
 
-- [ ] Verify Q80R app discovery/launch support.
-- [ ] Determine reliable app identifiers from the target TV or trustworthy sources.
-- [ ] Do not assume IDs from other Samsung models are valid.
+The reserved app row already exists in the UI.
 
-### Possible shortcuts
+**Do not redesign the Remote Control screen or move this row.**
 
-- [ ] Netflix
-- [ ] YouTube
-- [ ] Prime Video
-- [ ] ABC iview
-- [ ] SBS On Demand
-- [ ] 9Now
-- [ ] 7plus
-- [ ] 10
-- [ ] Other installed apps where discoverable
+The row should eventually contain dynamically discovered TV applications such as:
 
-### Completion criteria
+- YouTube
+- Netflix
+- ABC iview
+- SBS On Demand
+- 9Now
+- 7plus
+- Prime Video
+- Other applications actually installed on the TV
 
-Only shortcuts proven reliable on the Q80R are exposed.
+Do not hard-code this list.
+
+The Samsung Q80R itself should be treated as the source of truth for which applications are available.
+
+Where possible, retrieve each application's actual icon from the TV and use that icon on its corresponding button.
+
+The app row must support horizontal scrolling/swiping so that more applications can be displayed than will fit across the phone screen.
 
 ---
 
-# Deferred backlog
+## Important Development Approach
 
-These are deliberately outside the current milestones unless the user reprioritizes them:
+This functionality depends on Samsung/Tizen behaviour that may vary between TV models and firmware versions.
 
-- [ ] Power-on/Wake-on-LAN investigation
-- [ ] Multiple TVs
-- [ ] Custom remote layouts
-- [ ] Favourite channels
-- [ ] Favourite apps
-- [ ] Home-screen widget
-- [ ] Quick Settings tile
-- [ ] Voice control
-- [ ] Wear OS
-- [ ] Macros
-- [ ] LG support
-- [ ] Android/Google TV support
-- [ ] Roku support
+Therefore:
 
-# Current instruction
+**Do not implement the entire feature based only on assumptions about Samsung's protocol.**
 
-Start at the milestone identified in `STATUS.md`.
+Develop and physically verify the functionality incrementally against the actual Samsung Q80R.
 
-Never skip a milestone's explicit user-verification stop point.
+The required development order is:
+
+```text
+1. Discover installed apps
+        ↓
+2. Inspect actual Q80R response
+        ↓
+3. Retrieve one app icon
+        ↓
+4. Display that icon
+        ↓
+5. Launch that app
+        ↓
+6. Generalise to all discovered apps
+        ↓
+7. Populate existing horizontal app row
+```
+
+Do not skip directly to the final UI implementation.
+
+---
+
+# Phase 1 — Investigate Samsung App Discovery
+
+Research and verify whether the existing Samsung WebSocket connection used by this project can request the installed application list from the physical Q80R.
+
+A likely Samsung WebSocket event used by some Samsung TVs is:
+
+```text
+ed.installedApp.get
+```
+
+This is a candidate only.
+
+**Do not assume it works on the Q80R without testing it.**
+
+Determine:
+
+- [ ] Correct request format.
+- [ ] Correct WebSocket channel/connection.
+- [ ] Whether the Q80R supports installed-app discovery.
+- [ ] What response event is returned.
+- [ ] What application metadata is returned.
+- [ ] Whether application name is returned.
+- [ ] Whether application ID is returned.
+- [ ] Whether an icon path/reference is returned.
+- [ ] Whether any other useful application metadata is returned.
+
+Reuse the existing authenticated Samsung connection.
+
+Do not create a second pairing mechanism unless the protocol genuinely requires another connection/channel.
+
+Do not break or alter the existing persistent Samsung authorization behaviour.
+
+---
+
+# Phase 2 — Temporary Discovery Test
+
+Before modifying the final app row, implement the smallest practical development/debug mechanism for requesting the installed application list.
+
+The purpose of this phase is simply to discover exactly what the physical Samsung Q80R returns.
+
+For each discovered application, capture safe diagnostic information such as:
+
+```text
+App:
+    Name: YouTube
+    ID: <returned application ID>
+    Icon: <returned icon reference/path>
+```
+
+Do not log:
+
+- Samsung pairing tokens
+- Authentication secrets
+- Other sensitive connection information
+
+Run this against the physical Q80R.
+
+Record the confirmed protocol behaviour in `STATUS.md`.
+
+Do not record pairing/authentication tokens in `STATUS.md`.
+
+---
+
+# Phase 3 — Application Data Model
+
+Once the Q80R response format has been verified, introduce a clean application model.
+
+For example:
+
+```kotlin
+data class TvApplication(
+    val id: String,
+    val name: String,
+    val iconReference: String? = null
+)
+```
+
+Adapt this model to the actual information returned by the Q80R.
+
+Do not expose Samsung protocol response objects directly to the Compose UI.
+
+Keep:
+
+```text
+Samsung protocol
+        ↓
+Samsung response parsing
+        ↓
+TvApplication model
+        ↓
+ViewModel/state
+        ↓
+Compose UI
+```
+
+---
+
+# Phase 4 — Retrieve One Application Icon
+
+Determine whether the icon reference returned by the Q80R can be used to retrieve the application's icon.
+
+Do not initially implement icon retrieval for every application.
+
+Choose one discovered application, preferably a familiar application such as YouTube or Netflix, and prove the complete icon retrieval path first.
+
+Determine:
+
+- [ ] How the icon is requested.
+- [ ] Whether it is retrieved through the Samsung WebSocket protocol.
+- [ ] Whether it is retrieved using HTTP or another local-TV endpoint.
+- [ ] What image format is returned.
+- [ ] Whether authentication is required.
+- [ ] Whether the icon remains available after reconnecting.
+- [ ] Whether the returned image can be safely decoded by Android.
+
+The TV itself should be preferred as the icon source.
+
+Do not download arbitrary app logos from Internet search results as a substitute for TV icon discovery.
+
+---
+
+# Phase 5 — Display One Real TV App
+
+Once one application's icon has successfully been retrieved:
+
+Display that application in one of the already-reserved app buttons on the Remote Control screen.
+
+The button should preferably contain:
+
+```text
+┌─────────────┐
+│             │
+│    ICON     │
+│             │
+│   YouTube   │
+└─────────────┘
+```
+
+Exact layout should follow the existing Remote Control visual design.
+
+The app name may be displayed beneath or alongside the icon depending on available space.
+
+Do not significantly increase the height of the reserved app row.
+
+Do not redesign the surrounding Remote Control UI.
+
+---
+
+# Phase 6 — Launch One Application
+
+Research and verify application launching against the physical Q80R.
+
+A likely Samsung WebSocket event used by some Samsung TVs is:
+
+```text
+ed.apps.launch
+```
+
+This is a candidate only.
+
+Do not assume its request format or compatibility.
+
+Use the application ID discovered directly from the Q80R.
+
+Do not initially hard-code a known Internet application ID.
+
+The test sequence should be:
+
+```text
+Discover YouTube
+        ↓
+Obtain its actual Q80R application ID
+        ↓
+Display YouTube button
+        ↓
+Tap button
+        ↓
+Send launch request using discovered ID
+        ↓
+YouTube physically opens on TV
+```
+
+This physical test is required before generalising the feature.
+
+---
+
+# Phase 7 — Populate All Discovered Applications
+
+Once discovery, icon retrieval and application launching have been physically verified with one application, generalise the implementation.
+
+Populate the reserved app row using the applications returned by the TV.
+
+For each application:
+
+- [ ] Use its discovered application ID.
+- [ ] Use its discovered name.
+- [ ] Retrieve its icon when possible.
+- [ ] Display its icon in the app button.
+- [ ] Display an appropriate fallback if its icon cannot be retrieved.
+- [ ] Launch it using its discovered application ID when tapped.
+
+Do not maintain a hard-coded mapping such as:
+
+```text
+Netflix -> fixed ID
+YouTube -> fixed ID
+ABC iview -> fixed ID
+```
+
+if the TV provides the required application IDs dynamically.
+
+The actual Q80R should remain the source of truth.
+
+---
+
+# Horizontally Scrollable App Row
+
+The app-button row that is already reserved on the Remote Control screen must support horizontal scrolling.
+
+The user must be able to swipe:
+
+```text
+← left / right →
+```
+
+through the discovered applications.
+
+Use an appropriate Jetpack Compose component, preferably a horizontally scrolling lazy container such as:
+
+```kotlin
+LazyRow
+```
+
+or an equivalent implementation appropriate to the existing architecture.
+
+Conceptually:
+
+```text
+Apps
+
+   [Netflix]  [YouTube]  [iview]  [SBS]  [9Now]
+       ←              swipe               →
+
+                         [7plus] [Prime] [Other]
+```
+
+Only the app row should scroll horizontally.
+
+**The main Remote Control screen must remain stationary.**
+
+A horizontal swipe over the app row must not cause the entire Remote Control page to move.
+
+Vertical scrolling of the main Remote Control screen must not be introduced.
+
+---
+
+# App Button Design
+
+App buttons must match the visual language of the newly redesigned remote.
+
+Requirements:
+
+- [ ] Compact.
+- [ ] Rounded.
+- [ ] Dark-theme compatible.
+- [ ] Consistent dimensions.
+- [ ] Consistent spacing.
+- [ ] Actual TV application icon where available.
+- [ ] Application name where practical.
+- [ ] Clear pressed state.
+- [ ] Existing haptic-feedback behaviour where appropriate.
+- [ ] Accessible content description containing the application name.
+- [ ] Large enough to tap comfortably.
+- [ ] Must not dominate the D-pad or primary remote controls.
+
+The D-pad remains the dominant control on the Remote Control screen.
+
+---
+
+# Icon Caching
+
+Do not repeatedly retrieve every application icon from the TV every time the UI recomposes.
+
+Once icon retrieval has been proven, introduce sensible local caching.
+
+The desired behaviour is approximately:
+
+```text
+Discover app
+     ↓
+Have cached icon?
+   ↙       ↘
+ Yes       No
+  ↓         ↓
+Use it    Retrieve from TV
+             ↓
+           Cache
+             ↓
+           Display
+```
+
+The cache implementation should remain simple.
+
+Do not introduce unnecessary third-party libraries merely for this feature.
+
+If the TV reports that an application/icon has changed, allow the cached representation to be refreshed.
+
+---
+
+# Loading State
+
+Application discovery may take some time after connecting to the TV.
+
+The app row must handle this gracefully.
+
+For example:
+
+```text
+Apps
+
+[ Loading TV apps… ]
+```
+
+or use lightweight placeholders consistent with the existing UI.
+
+Do not block the Remote Control screen while apps are being discovered.
+
+The normal remote controls must remain usable.
+
+---
+
+# Failure Behaviour
+
+Application discovery is an enhancement to the remote.
+
+Failure to discover applications must **not** prevent normal remote-control functionality.
+
+If application discovery fails:
+
+- Do not crash.
+- Do not disconnect the working Samsung remote connection unnecessarily.
+- Do not erase pairing information.
+- Do not trigger unnecessary Samsung authorization prompts.
+- Do not repeatedly retry so aggressively that it affects normal remote use.
+- Record useful development diagnostics with secrets redacted.
+- Present a subtle unavailable/empty state in the app row if appropriate.
+
+The rest of the remote must continue functioning normally.
+
+---
+
+# Icon Failure Behaviour
+
+If an application is discovered and can be launched but its icon cannot be retrieved, the application must still be usable.
+
+Use a fallback button such as:
+
+```text
+┌─────────────┐
+│      ▶      │
+│   YouTube   │
+└─────────────┘
+```
+
+or another generic application icon consistent with the existing remote design.
+
+**Icon retrieval failure must not prevent application launching.**
+
+---
+
+# Refresh Behaviour
+
+The installed-app list may change over time.
+
+Design the implementation so application discovery can be performed again without requiring the TV to be forgotten or re-paired.
+
+At minimum, refresh the discovered application list at an appropriate time after establishing a TV connection.
+
+Do not unnecessarily query the TV every time Compose recomposes.
+
+Keep discovery in the appropriate state/protocol layer rather than directly inside Composables.
+
+---
+
+# Architecture Requirements
+
+Maintain the project's existing separation between:
+
+```text
+Compose UI
+    ↓
+ViewModel / state
+    ↓
+TV abstraction
+    ↓
+Samsung implementation
+    ↓
+Samsung Q80R
+```
+
+Do not put raw Samsung WebSocket JSON or Samsung event names directly inside Composables.
+
+Where appropriate, extend the TV abstraction with operations conceptually similar to:
+
+```kotlin
+suspend fun getInstalledApplications(): List<TvApplication>
+
+suspend fun launchApplication(application: TvApplication)
+```
+
+Exact APIs should follow the existing project architecture.
+
+Icon retrieval should similarly live outside the Compose UI.
+
+---
+
+# Existing Functionality Must Not Regress
+
+This task must not break:
+
+- [ ] Existing Samsung pairing.
+- [ ] Pairing-token persistence.
+- [ ] Automatic reconnection.
+- [ ] Power controls.
+- [ ] Disconnect.
+- [ ] Source.
+- [ ] Menu / Settings.
+- [ ] Guide.
+- [ ] Exit.
+- [ ] Home.
+- [ ] D-pad.
+- [ ] OK.
+- [ ] Back.
+- [ ] Volume controls.
+- [ ] Channel controls.
+- [ ] Haptic feedback.
+- [ ] More Controls.
+- [ ] TV discovery.
+- [ ] Forget Saved TV.
+- [ ] Existing two-page navigation.
+
+Do not unnecessarily modify working Samsung remote-control protocol code.
+
+---
+
+# Physical Test Procedure
+
+## Test 1 — Discover Applications
+
+1. Connect the Android app to the physical Samsung Q80R.
+2. Request the installed application list.
+3. Confirm the TV returns application information.
+4. Inspect the returned names and IDs.
+5. Confirm familiar installed applications such as YouTube or Netflix are present if they are installed on the TV.
+6. Record the verified response structure in `STATUS.md`.
+
+Do not record secrets.
+
+---
+
+## Test 2 — Retrieve One Icon
+
+1. Select one discovered application.
+2. Use the icon information returned by the TV.
+3. Retrieve its actual icon.
+4. Decode the image on Android.
+5. Display it in the reserved app row.
+6. Confirm visually that the correct application icon appears.
+
+Do not proceed to general icon retrieval until this works.
+
+---
+
+## Test 3 — Launch One Application
+
+1. Use the discovered application ID.
+2. Tap its button in the Android remote.
+3. Send the verified Samsung application-launch request.
+4. Confirm the application physically opens on the Samsung Q80R.
+
+This test must succeed before generalising app launching.
+
+---
+
+## Test 4 — Populate App Row
+
+1. Discover all applications.
+2. Populate the reserved app row.
+3. Confirm application names/icons correspond to applications actually installed on the Q80R.
+4. Confirm the row remains within its reserved area.
+5. Confirm the surrounding Remote Control layout has not been disrupted.
+
+---
+
+## Test 5 — Horizontal Scrolling
+
+1. Ensure enough applications are present that they cannot all fit on screen.
+2. Swipe the app row to the left.
+3. Confirm additional applications smoothly appear.
+4. Swipe back to the right.
+5. Confirm earlier applications reappear.
+6. Confirm only the app row moves.
+7. Confirm the main Remote Control screen remains stationary.
+8. Confirm application buttons remain easy to tap after scrolling.
+
+---
+
+## Test 6 — Launch Multiple Applications
+
+Test several discovered applications, preferably including:
+
+- YouTube
+- Netflix
+- ABC iview
+- SBS On Demand
+- 9Now
+- 7plus
+- Prime Video
+
+Only test applications actually installed on the Q80R.
+
+For each application:
+
+1. Locate it in the horizontally scrollable row.
+2. Tap it.
+3. Confirm the correct application physically opens on the TV.
+
+---
+
+## Test 7 — Restart and Reconnect
+
+1. Close the Android app.
+2. Reopen it.
+3. Allow the existing automatic TV reconnection to occur.
+4. Confirm no unnecessary Samsung `Allow` prompt appears.
+5. Confirm the application row is populated correctly.
+6. Confirm cached icons appear appropriately.
+7. Confirm app launching still works.
+
+---
+
+# Completion Criteria
+
+This task is complete only when:
+
+- [ ] Installed applications can be discovered from the physical Samsung Q80R.
+- [ ] Application names are obtained from the TV.
+- [ ] Application IDs are obtained from the TV.
+- [ ] At least one actual application icon can be retrieved from the TV if the Q80R exposes usable icon information.
+- [ ] Retrieved icons can be displayed on Android.
+- [ ] Application launching has been physically verified on the Q80R.
+- [ ] The reserved app row is populated dynamically from discovered TV applications.
+- [ ] The row can be scrolled horizontally by swiping left/right.
+- [ ] Only the app row scrolls; the main remote remains stationary.
+- [ ] App buttons use the actual application icon where available.
+- [ ] A clean fallback is provided where an icon cannot be obtained.
+- [ ] Icon failure does not prevent application launching.
+- [ ] Discovery failure does not prevent normal remote operation.
+- [ ] Application icons are cached sensibly rather than repeatedly retrieved during recomposition.
+- [ ] Existing Samsung pairing and authorization behaviour has not regressed.
+- [ ] Existing remote-control functionality continues to work.
+- [ ] Project builds successfully.
+- [ ] Verified Q80R-specific protocol findings are recorded in `STATUS.md`.
+
+---
+
+# Stop Point
+
+After successful physical verification:
+
+1. Update `STATUS.md`.
+2. Record the verified Q80R installed-app discovery mechanism.
+3. Record the actual response structure.
+4. Record how application IDs are obtained.
+5. Record how application icons are retrieved.
+6. Record the verified application-launch mechanism.
+7. Record any Q80R limitations discovered during testing.
+8. Mark this task complete.
+9. Stop.
+
+Do not automatically begin unrelated feature work.
+
+**Do not treat assumptions from other Samsung models as verified Q80R behaviour. The physical Samsung Q80R is the final authority for this task.**

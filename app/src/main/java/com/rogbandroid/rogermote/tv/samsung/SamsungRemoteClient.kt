@@ -1,6 +1,8 @@
 package com.rogbandroid.rogermote.tv.samsung
 
 import android.util.Log
+import android.util.Base64
+import com.rogbandroid.rogermote.data.TvApplication
 import com.rogbandroid.rogermote.tv.ConnectionState
 import com.rogbandroid.rogermote.tv.RemoteCommand
 import com.rogbandroid.rogermote.tv.TvRemoteClient
@@ -28,10 +30,16 @@ internal class SamsungRemoteClient(
 ) : TvRemoteClient {
     private val mutableConnectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
     override val connectionState: StateFlow<ConnectionState> = mutableConnectionState.asStateFlow()
+    private val mutableInstalledApplications = MutableStateFlow<List<TvApplication>>(emptyList())
+    override val installedApplications: StateFlow<List<TvApplication>> =
+        mutableInstalledApplications.asStateFlow()
 
     private var webSocket: WebSocket? = null
     private var httpClient: OkHttpClient? = null
     private var connectionGeneration = 0
+    private var currentIpAddress: String? = null
+    private val pendingIconRequests = ArrayDeque<TvApplication>()
+    private var activeIconRequest: TvApplication? = null
 
     override fun connect(ipAddress: String) {
         val savedToken = tokenStore.read(ipAddress)
@@ -47,6 +55,7 @@ internal class SamsungRemoteClient(
         token: String?,
         mayRetryWithoutToken: Boolean,
     ) {
+        currentIpAddress = ipAddress
         disconnectCurrentSocket()
         val generation = ++connectionGeneration
         mutableConnectionState.value = ConnectionState.Connecting
@@ -73,6 +82,9 @@ internal class SamsungRemoteClient(
         connectionGeneration++
         disconnectCurrentSocket()
         mutableConnectionState.value = ConnectionState.Disconnected
+        mutableInstalledApplications.value = emptyList()
+        pendingIconRequests.clear()
+        activeIconRequest = null
         Log.d(TAG, "Samsung TV remote disconnected")
     }
 
@@ -88,6 +100,18 @@ internal class SamsungRemoteClient(
                 "The command could not be sent. Reconnect to the TV.",
             )
         }
+    }
+
+    override fun refreshApplications() {
+        if (mutableConnectionState.value != ConnectionState.Connected) return
+        val accepted = webSocket?.send(SamsungProtocol.installedApplicationsMessage()) == true
+        if (accepted) Log.d(TAG, "Requested installed Samsung TV applications")
+    }
+
+    override fun launchApplication(application: TvApplication) {
+        if (mutableConnectionState.value != ConnectionState.Connected) return
+        val accepted = webSocket?.send(SamsungProtocol.launchApplicationMessage(application.id)) == true
+        if (accepted) Log.d(TAG, "Requested launch for discovered TV application: ${application.name}")
     }
 
     private fun listener(
@@ -124,6 +148,7 @@ internal class SamsungRemoteClient(
                     }
                     mutableConnectionState.value = ConnectionState.Connected
                     Log.d(TAG, "Samsung TV authorization completed")
+                    refreshApplications()
                 }
                 SamsungEvent.Unauthorized -> {
                     if (mayRetryWithoutToken) {
@@ -131,6 +156,32 @@ internal class SamsungRemoteClient(
                     } else {
                         mutableConnectionState.value = ConnectionState.AuthorizationRejected
                         Log.w(TAG, "Samsung TV authorization rejected")
+                    }
+                }
+                is SamsungEvent.Applications -> {
+                    mutableInstalledApplications.value = event.applications
+                    pendingIconRequests.clear()
+                    activeIconRequest = null
+                    event.applications
+                        .filter { !it.iconReference.isNullOrBlank() }
+                        .forEach(pendingIconRequests::addLast)
+                    requestNextApplicationIcon()
+                    Log.d(TAG, "Samsung TV application discovery returned ${event.applications.size} entries")
+                }
+                is SamsungEvent.ApplicationIcon -> {
+                    val application = activeIconRequest
+                    val iconData = event.iconData
+                    if (application != null && !iconData.isNullOrBlank()) {
+                        if (iconData.isImageData()) {
+                            updateApplicationIcon(application, iconData)
+                            activeIconRequest = null
+                            requestNextApplicationIcon()
+                        } else {
+                            downloadApplicationIcon(application, iconData)
+                        }
+                    } else {
+                        activeIconRequest = null
+                        requestNextApplicationIcon()
                     }
                 }
                 SamsungEvent.Invalid -> Log.w(TAG, "Ignored malformed Samsung TV response")
@@ -172,6 +223,72 @@ internal class SamsungRemoteClient(
             Log.w(TAG, "Samsung TV connection failed: ${t.javaClass.simpleName}")
         }
     }
+
+    private fun requestNextApplicationIcon() {
+        if (activeIconRequest != null || mutableConnectionState.value != ConnectionState.Connected) return
+        val next = pendingIconRequests.removeFirstOrNull() ?: return
+        val iconPath = next.iconReference ?: return requestNextApplicationIcon()
+        activeIconRequest = next
+        val accepted = webSocket?.send(SamsungProtocol.applicationIconMessage(iconPath)) == true
+        if (!accepted) activeIconRequest = null
+        if (!accepted) requestNextApplicationIcon()
+    }
+
+    private fun updateApplicationIcon(application: TvApplication, iconData: String) {
+        mutableInstalledApplications.value = mutableInstalledApplications.value.map {
+            if (it.id == application.id) it.copy(iconData = iconData) else it
+        }
+    }
+
+    private fun downloadApplicationIcon(application: TvApplication, reference: String) {
+        val ipAddress = currentIpAddress ?: run {
+            activeIconRequest = null
+            requestNextApplicationIcon()
+            return
+        }
+        val url = when {
+            reference.startsWith("http://$ipAddress") || reference.startsWith("https://$ipAddress") -> reference
+            reference.startsWith("/") -> "http://$ipAddress:8001$reference"
+            else -> {
+                activeIconRequest = null
+                requestNextApplicationIcon()
+                return
+            }
+        }
+        val client = httpClient
+        if (client == null) {
+            activeIconRequest = null
+            requestNextApplicationIcon()
+            return
+        }
+        client.newCall(Request.Builder().url(url).build()).enqueue(object : okhttp3.Callback {
+            override fun onFailure(call: okhttp3.Call, e: java.io.IOException) {
+                activeIconRequest = null
+                requestNextApplicationIcon()
+            }
+
+            override fun onResponse(call: okhttp3.Call, response: Response) {
+                response.use {
+                    if (it.isSuccessful) {
+                        val bytes = it.body?.bytes()
+                        if (bytes != null && bytes.isNotEmpty()) {
+                            updateApplicationIcon(
+                                application,
+                                "data:image/png;base64," + Base64.encodeToString(bytes, Base64.NO_WRAP),
+                            )
+                        }
+                    }
+                }
+                activeIconRequest = null
+                requestNextApplicationIcon()
+            }
+        })
+    }
+
+    private fun String.isImageData(): Boolean = startsWith("data:image/") ||
+        runCatching {
+            Base64.decode(substringAfter("base64,", this), Base64.DEFAULT).isNotEmpty()
+        }.getOrDefault(false)
 
     private fun retryWithoutRejectedToken(ipAddress: String) {
         tokenStore.clear(ipAddress)

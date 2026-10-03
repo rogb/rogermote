@@ -1,6 +1,7 @@
 package com.rogbandroid.rogermote.viewmodel
 
 import com.rogbandroid.rogermote.data.TvDevice
+import com.rogbandroid.rogermote.data.TvApplication
 import com.rogbandroid.rogermote.tv.ConnectionState
 
 enum class RemotePage {
@@ -13,6 +14,7 @@ data class RemoteUiState(
     val hasSavedConfiguration: Boolean = false,
     val connectionState: ConnectionState = ConnectionState.Disconnected,
     val discoveredDevices: List<TvDevice> = emptyList(),
+    val installedApplications: List<TvApplication> = emptyList(),
     val isDiscovering: Boolean = false,
     val discoveryError: String? = null,
     val hapticsEnabled: Boolean = true,

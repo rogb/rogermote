@@ -7,6 +7,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.rogbandroid.rogermote.data.TvPreferences
 import com.rogbandroid.rogermote.data.TvDevice
+import com.rogbandroid.rogermote.data.TvApplication
 import com.rogbandroid.rogermote.discovery.SamsungSsdpDiscovery
 import com.rogbandroid.rogermote.tv.ConnectionState
 import com.rogbandroid.rogermote.tv.RemoteCommand
@@ -56,8 +57,9 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             remoteClient.connectionState.collect { connectionState ->
                 mutableUiState.update {
-                    it.copy(
-                        connectionState = connectionState,
+                        it.copy(
+                            connectionState = connectionState,
+                            installedApplications = remoteClient.installedApplications.value,
                         page = if (connectionState == ConnectionState.Connected) {
                             RemotePage.Remote
                         } else {
@@ -65,6 +67,11 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
                         },
                     )
                 }
+            }
+        }
+        viewModelScope.launch {
+            remoteClient.installedApplications.collect { applications ->
+                mutableUiState.update { it.copy(installedApplications = applications) }
             }
         }
         runCatching { connectivityManager?.registerDefaultNetworkCallback(networkCallback) }
@@ -104,6 +111,10 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
 
     fun sendCommand(command: RemoteCommand) {
         remoteClient.sendCommand(command)
+    }
+
+    fun launchApplication(application: TvApplication) {
+        remoteClient.launchApplication(application)
     }
 
     fun setHapticsEnabled(enabled: Boolean) {

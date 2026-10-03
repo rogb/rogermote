@@ -4,9 +4,9 @@ Last updated: 2026-10-02
 
 ## Current milestone
 
-**Milestone 8.5 — Remote UI Revamp**
+**Milestone 9 — TV app shortcuts**
 
-Status: Milestones 5, 6, 7, and 8 physically verified by the user; Milestone 8.5 implementation complete and awaiting physical verification.
+Status: Milestones 5, 6, 7, and 8 physically verified by the user; Milestone 9 implementation is in place and awaiting physical Q80R verification.
 
 ## Project objective
 
@@ -80,6 +80,12 @@ Do not put public IP addresses, pairing tokens, passwords, or other secrets in t
 - The Remote Control page now uses a dark compact layout with a unified circular D-pad, vertical volume/channel controls, and a fixed no-scroll primary surface.
 - More Controls now opens as an animated modal bottom sheet containing the keypad, playback, info, and colour controls.
 - Power Off is exposed through the new generic command model using the Samsung `KEY_POWER` candidate.
+- Milestone 9 app shortcut plumbing added without hard-coded application names or IDs.
+- The authenticated Samsung WebSocket requests installed applications using the candidate `ed.installedApp.get` event.
+- TV-returned application names, IDs, and icon references are parsed into `TvApplication` models.
+- The reserved shortcut row now uses a horizontally scrolling `LazyRow` populated from discovered applications.
+- Tapping a discovered application sends the candidate `ed.apps.launch` event using its TV-returned application ID.
+- A generic fallback play icon is shown until the Q80R's icon reference format is physically confirmed and icon retrieval is implemented.
 
 ## Verified Samsung protocol facts
 
@@ -134,6 +140,17 @@ Samsung discovery uses standard SSDP/UPnP multicast at `239.255.255.250:1900`, l
 - 2026-10-02: Final Milestone 8.5 debug APK installed successfully on the Pixel 6; an earlier build also cold-launched `MainActivity` successfully.
 - 2026-10-02: Milestone 8 `assembleDebug`, JVM tests, and Android test APK build passed.
 - 2026-10-02: Connected Android test attempt was blocked because the Pixel 6 disconnected from ADB; `adb devices` reported no connected devices.
+- 2026-10-03: Milestone 9 Samsung app protocol tests passed, including discovery parsing and launch-message serialization.
+- 2026-10-03: Milestone 9 `testDebugUnitTest` and `assembleDebug` passed.
+- 2026-10-03: Corrected the app-launch payload to send structured `appId`, `action_type`, and `metaTag` data after physical testing showed no launch response; physical retest is pending.
+- 2026-10-03: Added sequential `ed.apps.icon` requests using each discovered icon path, in-memory decoded icon state, and a fallback icon when the TV response is unavailable or unusable.
+- 2026-10-03: Expanded icon handling to accept direct image data, nested response fields, and TV-local HTTP paths/URLs; icon retrieval remains pending physical Q80R confirmation.
+- 2026-10-03: Added bundled native brand icons sourced from the public Simple Icons catalog for YouTube, Netflix, Apple TV, Spotify, Plex, Paramount+, Max, Twitch, and Crunchyroll. Discovered apps use a matching bundled icon first, then TV-provided image data, then the generic fallback.
+- 2026-10-03: Bundled-icon `testDebugUnitTest` and `assembleDebug` passed.
+- 2026-10-03: Added bundled icons and matching for Prime Video, Disney+, ABC iview, 7plus, 10 play, Kayo, and Internet/browser entries using public Iconify assets plus a native globe fallback.
+- 2026-10-03: Expanded bundled-icon `testDebugUnitTest` and `assembleDebug` passed.
+- 2026-10-03: Added bundled icons and matching for Stan, Binge, 9Now, NFL, Foxtel, Google, Google TV, Tubi, Telstra, and Calm. BritBox, main SBS, and a clearly branded Universal TV asset remain unavailable in the selected public catalog.
+- 2026-10-03: Added sourced bundled icons and matching for SBS, current Network 10, Universal TV, and BritBox.
 
 ## Important decisions
 
@@ -164,7 +181,8 @@ Samsung discovery uses standard SSDP/UPnP multicast at `239.255.255.250:1900`, l
 - SSDP discovery depends on the phone and TV sharing a LAN that permits multicast; some routers isolate Wi-Fi clients or suppress multicast advertisements.
 - Milestone 8 haptics, hold-repeat, network loss/recovery, and foreground/background behavior were implemented and included in the user-confirmed Milestone 8 verification.
 - Milestone 8.5 visual layout, two-page startup behavior, bottom-sheet controls, and Power Off require physical Q80R verification before this milestone can be marked complete.
+- Milestone 9's installed-app response format, icon retrieval path, and launch behavior are not yet physically verified on the Q80R.
 
 ## Next action
 
-On the physical Q80R, verify the new Remote Control layout, Setup page navigation, bottom-sheet controls, all existing commands, and the new Power Off control. Confirm that a saved TV opens directly to Remote Control and that an unconfigured install opens TV Setup.
+On the physical Q80R, verify the new Remote Control layout, Setup page navigation, all existing commands, and the new Power Off control. Then confirm whether installed-app discovery returns names, IDs, and usable icon references, and test launching one discovered application from the reserved row.

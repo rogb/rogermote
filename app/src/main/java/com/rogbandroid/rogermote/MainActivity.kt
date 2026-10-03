@@ -65,6 +65,7 @@ fun RogermoteApp(viewModel: RemoteViewModel = viewModel()) {
         RemotePage.Remote -> RemoteScreen(
             uiState = uiState,
             onCommand = viewModel::sendCommand,
+            onLaunchApplication = viewModel::launchApplication,
             onDisconnect = viewModel::disconnect,
             onOpenSetup = viewModel::openSetup,
         )
