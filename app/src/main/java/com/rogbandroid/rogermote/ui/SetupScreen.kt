@@ -13,7 +13,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -68,7 +67,7 @@ fun SetupScreen(
                     style = MaterialTheme.typography.headlineMedium,
                     modifier = Modifier.weight(1f),
                 )
-                Icon(Icons.Default.Settings, contentDescription = null)
+                Icon(Icons.Default.Search, contentDescription = "Scanning")
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -119,9 +118,10 @@ fun SetupScreen(
                         Text(
                             buildString {
                                 append(device.friendlyName)
+                                append("\nModel: ")
+                                append(device.modelName?.takeIf { it.isNotBlank() } ?: "Unavailable")
                                 append("\n")
                                 append(device.ipAddress)
-                                device.modelName?.let { append(" - $it") }
                             },
                         )
                     }

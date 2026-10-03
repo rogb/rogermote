@@ -13,6 +13,7 @@ import java.net.URL
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 
 internal class SamsungSsdpDiscovery(context: Context) {
     private val wifiManager = context.applicationContext
@@ -90,10 +91,17 @@ internal class SamsungSsdpDiscovery(context: Context) {
         val friendlyName = description?.friendlyName
             ?: message.headers["friendlyname"]
             ?: "Samsung TV"
+        val modelName = listOf(
+            description?.modelName,
+            message.headers["modelname"],
+            message.headers["modelnumber"],
+            message.headers["modeldescription"],
+        ).firstOrNull { !it.isNullOrBlank() }
+            ?: readTvModel(ipAddress)
         return TvDevice(
             ipAddress = ipAddress,
             friendlyName = friendlyName,
-            modelName = description?.modelName,
+            modelName = modelName,
             uniqueId = description?.uniqueId ?: message.headers["usn"],
         )
     }
@@ -116,13 +124,30 @@ internal class SamsungSsdpDiscovery(context: Context) {
                 if (event == org.xmlpull.v1.XmlPullParser.START_TAG) {
                     when (parser.name.lowercase()) {
                         "friendlyname" -> friendlyName = parser.nextText().trim()
-                        "modelname" -> modelName = parser.nextText().trim()
+                        "modelname", "modelnumber", "modeldescription" -> {
+                            if (modelName == null) modelName = parser.nextText().trim()
+                        }
                         "udn", "deviceid" -> uniqueId = parser.nextText().trim()
                     }
                 }
                 event = parser.next()
             }
             DeviceDescription(friendlyName, modelName, uniqueId)
+        }
+    }.getOrNull()
+
+    private fun readTvModel(ipAddress: String): String? = runCatching {
+        val connection = URL("http://$ipAddress:8001/api/v2/").openConnection().apply {
+            connectTimeout = MODEL_TIMEOUT_MILLIS.toInt()
+            readTimeout = MODEL_TIMEOUT_MILLIS.toInt()
+            useCaches = false
+        }
+        connection.getInputStream().bufferedReader().use { reader ->
+            val device = JSONObject(reader.readText()).optJSONObject("device") ?: return null
+            listOf("modelName", "model", "modelNumber")
+                .asSequence()
+                .map { device.optString(it).trim() }
+                .firstOrNull { it.isNotBlank() }
         }
     }.getOrNull()
 
@@ -140,7 +165,8 @@ internal class SamsungSsdpDiscovery(context: Context) {
         const val SSDP_MULTICAST_ADDRESS = "239.255.255.250"
         const val SSDP_PORT = 1900
         const val SOCKET_TIMEOUT_MILLIS = 250L
-        const val DESCRIPTION_TIMEOUT_MILLIS = 600L
+        const val DESCRIPTION_TIMEOUT_MILLIS = 1_500L
+        const val MODEL_TIMEOUT_MILLIS = 1_000L
         const val DEFAULT_SCAN_TIMEOUT_MILLIS = 3_500L
         const val MAX_PACKET_SIZE = 8 * 1024
     }

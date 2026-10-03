@@ -13,9 +13,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
@@ -29,7 +29,6 @@ import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
@@ -39,32 +38,27 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PowerSettingsNew
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.automirrored.filled.VolumeDown
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -132,14 +126,12 @@ private fun Modifier.raisedAccent(shape: Shape): Modifier =
         )
 
 @Composable
-@OptIn(ExperimentalMaterial3Api::class)
 fun RemoteScreen(
     uiState: RemoteUiState,
     onCommand: (RemoteCommand) -> Unit,
     onDisconnect: () -> Unit,
     onOpenSetup: () -> Unit,
 ) {
-    var showMoreControls by remember { mutableStateOf(false) }
     val controlsEnabled = uiState.isConnected
     val haptic = LocalHapticFeedback.current
 
@@ -188,7 +180,7 @@ fun RemoteScreen(
                     IconButton(onClick = onOpenSetup, modifier = Modifier.semantics {
                         contentDescription = "TV setup and settings"
                     }) {
-                        Icon(Icons.Default.Settings, contentDescription = null, tint = Color.White)
+                        Icon(Icons.Default.Search, contentDescription = null, tint = Color.White)
                     }
                 }
             }
@@ -207,15 +199,15 @@ fun RemoteScreen(
                     modifier = Modifier.weight(1f),
                 )
                 RemoteActionButton(
-                    icon = Icons.Default.Menu,
-                    label = "Menu",
+                    icon = Icons.Default.Settings,
+                    label = "Settings",
                     enabled = controlsEnabled,
                     hapticsEnabled = uiState.hapticsEnabled,
                     onClick = { onCommand(RemoteCommand.Menu) },
                     modifier = Modifier.weight(1f),
                 )
                 RemoteActionButton(
-                    icon = Icons.Default.Info,
+                    icon = Icons.AutoMirrored.Filled.PlaylistPlay,
                     label = "Guide",
                     enabled = controlsEnabled,
                     hapticsEnabled = uiState.hapticsEnabled,
@@ -232,7 +224,7 @@ fun RemoteScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             NavigationPad(
                 enabled = controlsEnabled,
                 hapticsEnabled = uiState.hapticsEnabled,
@@ -240,7 +232,7 @@ fun RemoteScreen(
                 modifier = Modifier.size(226.dp),
             )
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -287,8 +279,8 @@ fun RemoteScreen(
                     label = "Ch",
                     upDescription = "Channel up",
                     downDescription = "Channel down",
-                    upIcon = Icons.Default.ArrowUpward,
-                    downIcon = Icons.Default.ArrowDownward,
+                    upIcon = Icons.Default.KeyboardArrowUp,
+                    downIcon = Icons.Default.KeyboardArrowDown,
                     enabled = controlsEnabled,
                     hapticsEnabled = uiState.hapticsEnabled,
                     onUp = { onCommand(RemoteCommand.ChannelUp) },
@@ -297,43 +289,14 @@ fun RemoteScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
-            Surface(
-                onClick = { showMoreControls = true },
-                enabled = true,
-                shape = RoundedCornerShape(18.dp),
-                color = Color.Transparent,
-                modifier = Modifier.fillMaxWidth().raisedButton(RoundedCornerShape(18.dp)),
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        Icons.Default.Keyboard,
-                        contentDescription = "More controls",
-                        tint = RemoteAccent,
-                        modifier = Modifier.size(26.dp),
-                    )
-                }
-            }
-        }
-    }
-
-    if (showMoreControls) {
-        ModalBottomSheet(
-            onDismissRequest = { showMoreControls = false },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-            containerColor = RemoteSurface,
-            contentColor = Color.White,
-            dragHandle = { BottomSheetDragHandle() },
-        ) {
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(color = Color(0xFF354047), thickness = 1.dp)
+            Spacer(modifier = Modifier.height(12.dp))
             MoreControls(
+                modifier = Modifier.weight(1f),
                 enabled = controlsEnabled,
                 hapticsEnabled = uiState.hapticsEnabled,
                 onCommand = onCommand,
-                onClose = { showMoreControls = false },
             )
         }
     }
@@ -529,7 +492,7 @@ private fun SmallIconButton(
         enabled = enabled,
         shape = RoundedCornerShape(16.dp),
         color = Color.Transparent,
-        modifier = Modifier.size(58.dp).raisedButton(RoundedCornerShape(16.dp)).semantics { contentDescription = description },
+        modifier = Modifier.size(64.dp).raisedButton(RoundedCornerShape(16.dp)).semantics { contentDescription = description },
     ) {
         Box(contentAlignment = Alignment.Center) {
             Icon(icon, contentDescription = null, tint = Color.White)
@@ -555,7 +518,7 @@ private fun SmallTextButton(
         enabled = enabled,
         shape = RoundedCornerShape(16.dp),
         color = Color.Transparent,
-        modifier = Modifier.height(42.dp).fillMaxWidth().raisedButton(RoundedCornerShape(16.dp)).semantics { contentDescription = description },
+        modifier = Modifier.height(64.dp).fillMaxWidth().raisedButton(RoundedCornerShape(16.dp)).semantics { contentDescription = description },
     ) {
         Box(contentAlignment = Alignment.Center) { Text(text, color = Color.White) }
     }
@@ -563,76 +526,56 @@ private fun SmallTextButton(
 
 @Composable
 private fun MoreControls(
+    modifier: Modifier,
     enabled: Boolean,
     hapticsEnabled: Boolean,
     onCommand: (RemoteCommand) -> Unit,
-    onClose: () -> Unit,
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).navigationBarsPadding(),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Box(
-            modifier = Modifier.fillMaxWidth(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    Icons.Default.Keyboard,
-                    contentDescription = "More controls",
-                    tint = RemoteAccent,
-                    modifier = Modifier.size(28.dp),
-                )
-            }
-            IconButton(
-                onClick = onClose,
-                modifier = Modifier.align(Alignment.CenterEnd),
-            ) {
-                Icon(Icons.Default.Close, contentDescription = "Close more controls")
-            }
-        }
-        val numberRows = listOf(listOf(1, 2, 3), listOf(4, 5, 6), listOf(7, 8, 9))
-        numberRows.forEach { row ->
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                row.forEach { number ->
-                    SheetButton(number.toString(), "Number $number", enabled, hapticsEnabled, Modifier.weight(1f)) {
-                        onCommand(numberCommand(number))
+                val numberRows = listOf(listOf(1, 2, 3), listOf(4, 5, 6), listOf(7, 8, 9))
+                numberRows.forEach { row ->
+                    Row(modifier = Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        row.forEach { number ->
+                            SheetButton(number.toString(), "Number $number", enabled, hapticsEnabled, Modifier.weight(1f)) {
+                                onCommand(numberCommand(number))
+                            }
+                        }
                     }
                 }
-            }
-        }
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Spacer(modifier = Modifier.weight(1f))
-            SheetButton("0", "Number 0", enabled, hapticsEnabled, Modifier.weight(1f)) {
-                onCommand(RemoteCommand.Number0)
-            }
-            Spacer(modifier = Modifier.weight(1f))
-        }
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            SheetIconButton(Icons.Default.FastRewind, "Rewind", enabled, hapticsEnabled, Modifier.weight(1f)) { onCommand(RemoteCommand.Rewind) }
-            SheetIconButton(Icons.Default.PlayArrow, "Play", enabled, hapticsEnabled, Modifier.weight(1f)) { onCommand(RemoteCommand.Play) }
-            SheetIconButton(Icons.Default.Pause, "Pause", enabled, hapticsEnabled, Modifier.weight(1f)) { onCommand(RemoteCommand.Pause) }
-            SheetIconButton(Icons.Default.Stop, "Stop", enabled, hapticsEnabled, Modifier.weight(1f)) { onCommand(RemoteCommand.Stop) }
-            SheetIconButton(Icons.Default.FastForward, "Fast forward", enabled, hapticsEnabled, Modifier.weight(1f)) { onCommand(RemoteCommand.FastForward) }
-        }
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            SheetIconButton(Icons.Default.Info, "Info", enabled, hapticsEnabled, Modifier.weight(1f)) {
-                onCommand(RemoteCommand.Info)
-            }
-            ColoredFunctionButton(Color(0xFFFF8A80), Color(0xFFD32F2F), "Red function", enabled, hapticsEnabled, Modifier.weight(1f)) {
-                onCommand(RemoteCommand.Red)
-            }
-            ColoredFunctionButton(Color(0xFF81C784), Color(0xFF388E3C), "Green function", enabled, hapticsEnabled, Modifier.weight(1f)) {
-                onCommand(RemoteCommand.Green)
-            }
-            ColoredFunctionButton(Color(0xFFFFF176), Color(0xFFF9A825), "Yellow function", enabled, hapticsEnabled, Modifier.weight(1f)) {
-                onCommand(RemoteCommand.Yellow)
-            }
-            ColoredFunctionButton(Color(0xFF64B5F6), Color(0xFF1976D2), "Blue function", enabled, hapticsEnabled, Modifier.weight(1f)) {
-                onCommand(RemoteCommand.Blue)
-            }
-        }
-        Spacer(modifier = Modifier.height(8.dp))
+                Row(modifier = Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Spacer(modifier = Modifier.weight(1f))
+                    SheetButton("0", "Number 0", enabled, hapticsEnabled, Modifier.weight(1f)) {
+                        onCommand(RemoteCommand.Number0)
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+                Row(modifier = Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    SheetIconButton(Icons.Default.FastRewind, "Rewind", enabled, hapticsEnabled, Modifier.weight(1f)) { onCommand(RemoteCommand.Rewind) }
+                    SheetIconButton(Icons.Default.PlayArrow, "Play", enabled, hapticsEnabled, Modifier.weight(1f)) { onCommand(RemoteCommand.Play) }
+                    SheetIconButton(Icons.Default.Pause, "Pause", enabled, hapticsEnabled, Modifier.weight(1f)) { onCommand(RemoteCommand.Pause) }
+                    SheetIconButton(Icons.Default.Stop, "Stop", enabled, hapticsEnabled, Modifier.weight(1f)) { onCommand(RemoteCommand.Stop) }
+                    SheetIconButton(Icons.Default.FastForward, "Fast forward", enabled, hapticsEnabled, Modifier.weight(1f)) { onCommand(RemoteCommand.FastForward) }
+                }
+                Row(modifier = Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    LargeSheetIconButton(Icons.Default.Info, "Info", enabled, hapticsEnabled, Modifier.weight(1f)) {
+                        onCommand(RemoteCommand.Info)
+                    }
+                    ColoredFunctionButton(Color(0xFFFF8A80), Color(0xFFD32F2F), "Red function", enabled, hapticsEnabled, Modifier.weight(1f)) {
+                        onCommand(RemoteCommand.Red)
+                    }
+                    ColoredFunctionButton(Color(0xFF81C784), Color(0xFF388E3C), "Green function", enabled, hapticsEnabled, Modifier.weight(1f)) {
+                        onCommand(RemoteCommand.Green)
+                    }
+                    ColoredFunctionButton(Color(0xFFFFF176), Color(0xFFF9A825), "Yellow function", enabled, hapticsEnabled, Modifier.weight(1f)) {
+                        onCommand(RemoteCommand.Yellow)
+                    }
+                    ColoredFunctionButton(Color(0xFF64B5F6), Color(0xFF1976D2), "Blue function", enabled, hapticsEnabled, Modifier.weight(1f)) {
+                        onCommand(RemoteCommand.Blue)
+                    }
+                }
     }
 }
 
@@ -655,7 +598,7 @@ private fun SheetButton(
         enabled = enabled,
         shape = RoundedCornerShape(14.dp),
         color = Color.Transparent,
-        modifier = modifier.height(48.dp).raisedButton(RoundedCornerShape(14.dp)).semantics { contentDescription = description },
+        modifier = modifier.fillMaxHeight().raisedButton(RoundedCornerShape(14.dp)).semantics { contentDescription = description },
     ) {
         val textColor = when (text) {
             "RED" -> Color(0xFFFF5252)
@@ -687,8 +630,36 @@ private fun SheetIconButton(
         enabled = enabled,
         shape = RoundedCornerShape(14.dp),
         color = Color.Transparent,
-        modifier = modifier.height(48.dp).raisedButton(RoundedCornerShape(14.dp)).semantics { contentDescription = description },
+        modifier = modifier.fillMaxHeight().raisedButton(RoundedCornerShape(14.dp)).semantics { contentDescription = description },
     ) { Box(contentAlignment = Alignment.Center) { Icon(icon, contentDescription = null, tint = Color.White) } }
+}
+
+@Composable
+private fun LargeSheetIconButton(
+    icon: ImageVector,
+    description: String,
+    enabled: Boolean,
+    hapticsEnabled: Boolean,
+    modifier: Modifier,
+    onClick: () -> Unit,
+) {
+    val haptic = LocalHapticFeedback.current
+    val trigger = {
+        if (hapticsEnabled) haptic.performHapticFeedback(HapticFeedbackType.VirtualKey)
+        onClick()
+    }
+    Surface(
+        onClick = trigger,
+        enabled = enabled,
+        shape = RoundedCornerShape(14.dp),
+        color = Color.Transparent,
+        modifier = modifier.fillMaxHeight().raisedButton(RoundedCornerShape(14.dp))
+            .semantics { contentDescription = description },
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(icon, contentDescription = null, tint = Color.White)
+        }
+    }
 }
 
 @Composable
@@ -711,7 +682,7 @@ private fun ColoredFunctionButton(
         enabled = enabled,
         shape = RoundedCornerShape(14.dp),
         color = Color.Transparent,
-        modifier = modifier.height(48.dp).raisedButton(RoundedCornerShape(14.dp))
+        modifier = modifier.fillMaxHeight().raisedButton(RoundedCornerShape(14.dp))
             .semantics { contentDescription = description },
     ) {
         Box(
@@ -742,16 +713,6 @@ private fun TextButtonLike(text: String, enabled: Boolean, onClick: () -> Unit) 
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier.height(32.dp),
     ) { Box(contentAlignment = Alignment.Center) { Text(text, color = Color(0xFFAAB4BA), style = MaterialTheme.typography.labelSmall) } }
-}
-
-@Composable
-private fun BottomSheetDragHandle() {
-    Box(
-        modifier = Modifier
-            .padding(vertical = 10.dp)
-            .size(width = 42.dp, height = 4.dp)
-            .background(Color(0xFF77838A), RoundedCornerShape(4.dp)),
-    )
 }
 
 private fun numberCommand(number: Int): RemoteCommand = when (number) {
