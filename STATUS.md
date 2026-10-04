@@ -110,6 +110,7 @@ Samsung discovery uses standard SSDP/UPnP multicast at `239.255.255.250:1900`, l
 
 ## Build/test results
 
+- 2026-10-04: Increased the D-pad diameter from 192dp to up to 240dp, constrained by available width with 60dp Back/Home buttons and at least 8dp gaps. Back/Home share the new diameter as their height; the six equally weighted lower-control rows give up the corresponding space evenly. `assembleDebug` passed; phone visual verification pending.
 - 2026-10-01: `assembleDebug`, `testDebugUnitTest`, and `assembleDebugAndroidTest` passed.
 - 2026-10-01: `connectedDebugAndroidTest` passed (1 test) on Pixel 6 / Android 17.
 - 2026-10-01: `installDebug` succeeded and `MainActivity` cold launch returned `Status: ok`.
@@ -164,6 +165,7 @@ Samsung discovery uses standard SSDP/UPnP multicast at `239.255.255.250:1900`, l
 - 2026-10-04: Hardened Samsung pairing reuse by deduplicating active connection requests, committing encrypted token writes synchronously, and keeping the authenticated WebSocket alive across ordinary app background/foreground transitions.
 - 2026-10-04: Standardized all rounded rectangular remote buttons to the 16dp Back/Home corner radius; circular D-pad and OK controls remain circular.
 - 2026-10-04: Button-radius standardization `testDebugUnitTest` and `assembleDebug` passed.
+- 2026-10-04: Investigated Android Studio editor errors. IDE logs report unresolved library types (including Compose Color/Modifier), while a forced Gradle rebuild (`--rerun-tasks`, 41 executed tasks), Kotlin compilation, unit tests, and debug APK assembly all passed. This isolates the reported errors to IDE analysis; Gradle sync and, if needed, IDE cache invalidation remain to be performed in Studio. No application code changes were needed.
 
 ## Important decisions
 

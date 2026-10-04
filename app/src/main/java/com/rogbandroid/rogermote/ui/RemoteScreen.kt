@@ -13,6 +13,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -249,34 +250,37 @@ fun RemoteScreen(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TallIconButton(
-                    icon = Icons.AutoMirrored.Filled.ArrowBack,
-                    description = "Back",
-                    enabled = controlsEnabled,
-                    hapticsEnabled = uiState.hapticsEnabled,
-                    modifier = Modifier.width(60.dp),
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                val navigationSize = minOf(240.dp, maxWidth - 136.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    onCommand(RemoteCommand.Back)
-                }
-                NavigationPad(
-                    enabled = controlsEnabled,
-                    hapticsEnabled = uiState.hapticsEnabled,
-                    onCommand = onCommand,
-                    modifier = Modifier.size(192.dp),
-                )
-                TallIconButton(
-                    icon = Icons.Default.Home,
-                    description = "Home",
-                    enabled = controlsEnabled,
-                    hapticsEnabled = uiState.hapticsEnabled,
-                    modifier = Modifier.width(60.dp),
-                ) {
-                    onCommand(RemoteCommand.Home)
+                    TallIconButton(
+                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        description = "Back",
+                        enabled = controlsEnabled,
+                        hapticsEnabled = uiState.hapticsEnabled,
+                        modifier = Modifier.width(60.dp).height(navigationSize),
+                    ) {
+                        onCommand(RemoteCommand.Back)
+                    }
+                    NavigationPad(
+                        enabled = controlsEnabled,
+                        hapticsEnabled = uiState.hapticsEnabled,
+                        onCommand = onCommand,
+                        modifier = Modifier.size(navigationSize),
+                    )
+                    TallIconButton(
+                        icon = Icons.Default.Home,
+                        description = "Home",
+                        enabled = controlsEnabled,
+                        hapticsEnabled = uiState.hapticsEnabled,
+                        modifier = Modifier.width(60.dp).height(navigationSize),
+                    ) {
+                        onCommand(RemoteCommand.Home)
+                    }
                 }
             }
 
@@ -622,7 +626,6 @@ private fun TallIconButton(
         shape = RoundedCornerShape(16.dp),
         color = Color.Transparent,
         modifier = modifier
-            .height(192.dp)
             .raisedButton(RoundedCornerShape(16.dp))
             .semantics { contentDescription = description },
     ) {
