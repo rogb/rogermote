@@ -35,6 +35,7 @@ enum class RemoteCommand {
     Rewind,
     FastForward,
     Info,
+    Subtitles,
     Red,
     Green,
     Yellow,

@@ -35,6 +35,7 @@ internal enum class SamsungKey(val protocolValue: String) {
     Rewind("KEY_REWIND"),
     FastForward("KEY_FF"),
     Info("KEY_INFO"),
+    Subtitles("KEY_SUB_TITLE"),
     Red("KEY_RED"),
     Green("KEY_GREEN"),
     Yellow("KEY_YELLOW"),

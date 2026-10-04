@@ -38,6 +38,7 @@ internal object SamsungCommandMapper {
         RemoteCommand.Rewind -> SamsungKey.Rewind
         RemoteCommand.FastForward -> SamsungKey.FastForward
         RemoteCommand.Info -> SamsungKey.Info
+        RemoteCommand.Subtitles -> SamsungKey.Subtitles
         RemoteCommand.Red -> SamsungKey.Red
         RemoteCommand.Green -> SamsungKey.Green
         RemoteCommand.Yellow -> SamsungKey.Yellow

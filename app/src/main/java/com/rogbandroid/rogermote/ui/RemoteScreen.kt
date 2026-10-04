@@ -45,6 +45,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.LiveTv
+import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -920,8 +921,8 @@ private fun MoreControls(
                     SheetIconButton(Icons.Default.FastForward, "Fast forward", enabled, hapticsEnabled, Modifier.weight(1f)) { onCommand(RemoteCommand.FastForward) }
                 }
                 Row(modifier = Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    LargeSheetIconButton(Icons.Default.Info, "Info", enabled, hapticsEnabled, Modifier.weight(1f)) {
-                        onCommand(RemoteCommand.Info)
+                    LargeSheetIconButton(Icons.Default.ClosedCaption, "Subtitles", enabled, hapticsEnabled, Modifier.weight(1f)) {
+                        onCommand(RemoteCommand.Subtitles)
                     }
                     ColoredFunctionButton(Color(0xFFFF8A80), Color(0xFFD32F2F), "Red function", enabled, hapticsEnabled, Modifier.weight(1f)) {
                         onCommand(RemoteCommand.Red)
