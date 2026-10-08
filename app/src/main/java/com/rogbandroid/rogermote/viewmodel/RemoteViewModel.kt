@@ -6,6 +6,7 @@ import android.net.Network
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.rogbandroid.rogermote.data.TvPreferences
+import com.rogbandroid.rogermote.data.SavedTvDevices
 import com.rogbandroid.rogermote.data.TvDevice
 import com.rogbandroid.rogermote.data.TvApplication
 import com.rogbandroid.rogermote.discovery.SamsungSsdpDiscovery
@@ -36,6 +37,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
             ipAddress = savedIpAddress.orEmpty(),
             hasSavedConfiguration = savedIpAddress != null,
             hapticsEnabled = tvPreferences.readHapticsEnabled(),
+            discoveredDevices = tvPreferences.readDiscoveredDevices(),
             page = if (savedIpAddress != null) RemotePage.Remote else RemotePage.Setup,
         ),
     )
@@ -162,21 +164,31 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
         if (mutableUiState.value.isDiscovering) return
         mutableUiState.update {
             it.copy(
-                discoveredDevices = emptyList(),
                 isDiscovering = true,
                 discoveryError = null,
+                onlineTvAddresses = emptySet(),
             )
         }
         viewModelScope.launch {
             val devices = runCatching { tvDiscovery.scan() }
+            val savedDevices = devices.getOrNull()?.let { found ->
+                SavedTvDevices.merge(mutableUiState.value.discoveredDevices, found).also {
+                    tvPreferences.writeDiscoveredDevices(it)
+                }
+            }
             mutableUiState.update { state ->
                 devices.fold(
                     onSuccess = { found ->
                         state.copy(
-                            discoveredDevices = found,
+                            discoveredDevices = savedDevices ?: state.discoveredDevices,
+                            onlineTvAddresses = found.mapTo(mutableSetOf()) { it.ipAddress },
                             isDiscovering = false,
                             discoveryError = if (found.isEmpty()) {
-                                "No Samsung TVs found. Enter an IP address manually."
+                                if (state.discoveredDevices.isEmpty()) {
+                                    "No Samsung TVs found. Enter an IP address manually."
+                                } else {
+                                    "No Samsung TVs found in this scan. Previously found TVs are still listed."
+                                }
                             } else {
                                 null
                             },
@@ -194,12 +206,34 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun selectTv(device: TvDevice) {
+        if (mutableUiState.value.isConnectionInProgress) return
+        reconnectJob?.cancel()
         mutableUiState.update {
             it.copy(
                 ipAddress = device.ipAddress,
                 discoveryError = null,
+                page = RemotePage.Setup,
             )
         }
+        connect()
+        if (remoteClient.connectionState.value == ConnectionState.Connected) {
+            openRemote()
+        }
+    }
+
+    fun removeDiscoveredTv(device: TvDevice) {
+        if (mutableUiState.value.isDiscovering) return
+        val remaining = mutableUiState.value.discoveredDevices.filterNot { it == device }
+        tvPreferences.writeDiscoveredDevices(remaining)
+        mutableUiState.update { it.copy(discoveredDevices = remaining) }
+    }
+
+    fun updateTvAlias(device: TvDevice, alias: String) {
+        val devices = mutableUiState.value.discoveredDevices.map {
+            if (it.ipAddress == device.ipAddress) it.copy(alias = alias) else it
+        }
+        tvPreferences.writeDiscoveredDevices(devices)
+        mutableUiState.update { it.copy(discoveredDevices = devices) }
     }
 
     fun forgetSavedTv() {
@@ -209,6 +243,7 @@ class RemoteViewModel(application: Application) : AndroidViewModel(application) 
         tvPreferences.clear()
         mutableUiState.value = RemoteUiState(
             hapticsEnabled = tvPreferences.readHapticsEnabled(),
+            discoveredDevices = tvPreferences.readDiscoveredDevices(),
         )
     }
 

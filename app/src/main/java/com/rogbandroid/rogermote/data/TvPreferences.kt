@@ -13,6 +13,15 @@ internal class TvPreferences(context: Context) {
         preferences.edit().putString(KEY_IP_ADDRESS, ipAddress).apply()
     }
 
+    fun readDiscoveredDevices(): List<TvDevice> =
+        SavedTvDevices.decode(preferences.getString(KEY_DISCOVERED_DEVICES, null))
+
+    fun writeDiscoveredDevices(devices: List<TvDevice>) {
+        preferences.edit()
+            .putString(KEY_DISCOVERED_DEVICES, SavedTvDevices.encode(devices))
+            .apply()
+    }
+
     fun readHapticsEnabled(): Boolean = preferences.getBoolean(KEY_HAPTICS_ENABLED, true)
 
     fun writeHapticsEnabled(enabled: Boolean) {
@@ -40,6 +49,7 @@ internal class TvPreferences(context: Context) {
     private companion object {
         const val PREFERENCES_NAME = "tv_configuration"
         const val KEY_IP_ADDRESS = "ip_address"
+        const val KEY_DISCOVERED_DEVICES = "discovered_devices"
         const val KEY_HAPTICS_ENABLED = "haptics_enabled"
         const val KEY_SHORTCUT_ORDER = "shortcut_order"
         const val SHORTCUT_ORDER_SEPARATOR = "\u001F"

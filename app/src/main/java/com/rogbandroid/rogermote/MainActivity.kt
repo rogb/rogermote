@@ -59,6 +59,8 @@ fun RogermoteApp(viewModel: RemoteViewModel = viewModel()) {
             onForgetSavedTv = viewModel::forgetSavedTv,
             onScanForTvs = viewModel::scanForTvs,
             onSelectTv = viewModel::selectTv,
+            onRemoveTv = viewModel::removeDiscoveredTv,
+            onAliasChange = viewModel::updateTvAlias,
             onHapticsEnabledChange = viewModel::setHapticsEnabled,
             onOpenRemote = viewModel::openRemote,
         )
@@ -85,6 +87,8 @@ fun RogermoteAppPreview() {
             onForgetSavedTv = {},
             onScanForTvs = {},
             onSelectTv = {},
+            onRemoveTv = {},
+            onAliasChange = { _, _ -> },
             onHapticsEnabledChange = {},
             onOpenRemote = {},
         )

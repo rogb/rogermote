@@ -189,6 +189,15 @@ fun RemoteScreen(
                 }
                 Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("Rogermote", color = Color.White, style = MaterialTheme.typography.titleLarge)
+                    if (uiState.selectedTvAlias.isNotEmpty()) {
+                        Text(
+                            text = uiState.selectedTvAlias,
+                            color = RemoteControlIcon,
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                     Text(
                         text = uiState.connectionState.displayText(),
                         color = if (uiState.isConnected) RemoteAccent else Color(0xFFAAB4BA),

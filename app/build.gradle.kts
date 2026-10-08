@@ -30,12 +30,23 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
     buildFeatures {
         compose = true
+    }
+}
+
+tasks.register("copyDebugApkAsRogermote") {
+    dependsOn("assembleDebug")
+    doLast {
+        val source = layout.buildDirectory.file("outputs/apk/debug/app-debug.apk").get().asFile
+        val target = layout.buildDirectory.file("outputs/apk/debug/rogermote-debug.apk").get().asFile
+        source.copyTo(target, overwrite = true)
+        logger.lifecycle("Rogermote APK: ${target.absolutePath}")
     }
 }
 

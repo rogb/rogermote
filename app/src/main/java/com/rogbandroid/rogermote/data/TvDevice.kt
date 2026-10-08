@@ -5,4 +5,5 @@ data class TvDevice(
     val friendlyName: String,
     val modelName: String? = null,
     val uniqueId: String? = null,
+    val alias: String = "",
 )

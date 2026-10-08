@@ -1,6 +1,6 @@
 # Samsung TV Remote — Project Status
 
-Last updated: 2026-10-02
+Last updated: 2026-10-07
 
 ## Current milestone
 
@@ -110,6 +110,9 @@ Samsung discovery uses standard SSDP/UPnP multicast at `239.255.255.250:1900`, l
 
 ## Build/test results
 
+- 2026-10-07: Added per-TV Alias fields that save immediately and survive rescans/restarts; selected TV alias appears below Rogermote in smaller body text with long-name ellipsis. Legacy stored entries without aliases still load. Final JVM tests and debug build passed. Installed via `adb install -r`; verified restored discovered list, delete-cross layout, selecting the already-connected TV returning to Remote, and a temporary Family Room TV alias rendering below the title on Pixel 6. Temporary alias cleared after verification. TV is connected again following the earlier test-runner cleanup; full fresh-pairing/offline selection remains a user test.
+- 2026-10-07: TV Setup now persists discovered TV names, IPs, models and IDs as local JSON. Scans merge results and retain offline devices; delete crosses remove list entries without clearing pairing/selected-TV settings (disabled during scanning). Tapping a TV immediately connects and successful connection opens Remote; an already-connected selection opens Remote immediately. Empty/failed scans preserve the saved list. Unit tests, debug APK and Android test APK builds passed; isolated persistence test passed on Pixel 6.
+- 2026-10-07: Gradle connected-test cleanup unexpectedly uninstalled the target app, clearing device-local preferences/pairing. Reinstalled the latest debug APK and disclosed the loss to the user; TV selection/pairing must be completed again. Future physical tests must preserve installed app data and avoid Gradle's uninstall cleanup on the user's phone (prefer isolated emulator or direct filtered instrumentation after backup).
 - 2026-10-04: User confirmed the Live TV sequence also failed and requested abandoning it. Removed the sequence and its tests; replaced the bottom button with Subtitles (CC icon), mapped to KEY_SUB_TITLE from https://tavicu.github.io/homebridge-samsung-tizen/extra/commands.html. Command mapping tests and `assembleDebug` passed. Subtitle behavior is pending Q80R testing on broadcast TV and streaming apps.
 - 2026-10-04: User confirmed KEY_TV alone does nothing from Netflix on the Q80R. Live TV now sends Exit, waits 2 seconds, sends TV, waits 300ms, then Exit. Based on a first-hand 2019 Q85 report (https://community.home-assistant.io/t/improving-samsung-tv-control/151922/85), not yet verified on Q80R. Other commands/app launches and socket teardown cancel the sequence; generation/state checks prevent delayed sends into another session. Sequence, failure, and cancellation tests plus `testDebugUnitTest` and `assembleDebug` passed. Next: physically retest from Netflix.
 - 2026-10-04: Replaced the bottom duplicate Info button with a Live TV icon and generic LiveTv command mapped to Samsung KEY_TV. Homebridge Samsung Tizen lists KEY_TV under input commands (https://tavicu.github.io/homebridge-samsung-tizen/extra/commands.html); Q80R switching from streaming apps remains pending physical verification. Updated command mapping tests; `testDebugUnitTest` and `assembleDebug` passed.
@@ -169,6 +172,13 @@ Samsung discovery uses standard SSDP/UPnP multicast at `239.255.255.250:1900`, l
 - 2026-10-04: Standardized all rounded rectangular remote buttons to the 16dp Back/Home corner radius; circular D-pad and OK controls remain circular.
 - 2026-10-04: Button-radius standardization `testDebugUnitTest` and `assembleDebug` passed.
 - 2026-10-04: Investigated Android Studio editor errors. IDE logs report unresolved library types (including Compose Color/Modifier), while a forced Gradle rebuild (`--rerun-tasks`, 41 executed tasks), Kotlin compilation, unit tests, and debug APK assembly all passed. This isolates the reported errors to IDE analysis; Gradle sync and, if needed, IDE cache invalidation remain to be performed in Studio. No application code changes were needed.
+- 2026-10-07: Changed the TV Setup page so only the bounded Found TVs list scrolls; setup controls and settings remain stationary. Unit tests and debug APK assembly passed.
+- 2026-10-07: Added the theme's lighter surfaceVariant background inside each grouped Found TV panel, retaining the rounded border. Unit tests and debug APK assembly passed.
+- 2026-10-07: Kept the TV button and alias field on their normal surface so the lighter color is visible only in the grouped panel background around them. Unit tests and debug APK assembly passed.
+- 2026-10-07: Moved Connect/Disconnect directly below the TV IP field. Found TV entries now show green Online or red Offline based on the latest scan; the online set is session-only and is refreshed on each scan. Unit tests and debug APK assembly passed.
+- 2026-10-07: Renamed the user-facing app and Samsung pairing identity to Mateymote while retaining the existing package/application ID. Added the `copyDebugApkAsMateymote` Gradle task, producing `mateymote-debug.apk`. Unit tests and packaging passed.
+- 2026-10-08: Tightened TV Setup spacing and reduced the Found TVs list height so the Haptic feedback text and controls remain visible while only the TV list scrolls. Unit tests and debug APK assembly passed.
+- 2026-10-08: Restored the user-facing app and Samsung pairing identity to Rogermote, and changed the packaged debug APK/task back to `rogermote-debug.apk` / `copyDebugApkAsRogermote`. Unit tests and packaging passed.
 
 ## Important decisions
 
